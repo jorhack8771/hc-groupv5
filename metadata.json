@@ -1,0 +1,8 @@
+{
+  "name": "HC Group",
+  "description": "Portal institucional y soluciones integrales para el sector salud",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

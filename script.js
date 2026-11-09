@@ -556,6 +556,38 @@ function hcT(key){
   var y = document.getElementById('year');
   if (y) y.textContent = new Date().getFullYear();
 
+  /* ---------- REPRODUCCIÓN AUTOMÁTICA DEL VIDEO DE PORTADA ---------- */
+  var heroVideo = document.getElementById('heroVideo');
+  if (heroVideo) {
+    heroVideo.muted = true;
+    heroVideo.defaultMuted = true;
+    heroVideo.volume = 0;
+    var startHeroVideo = function() {
+      if (heroVideo.paused) {
+        var p = heroVideo.play();
+        if (p !== undefined) {
+          p.catch(function() {
+            var onFirstTouch = function() {
+              heroVideo.play().catch(function(){});
+              window.removeEventListener('touchstart', onFirstTouch);
+              window.removeEventListener('click', onFirstTouch);
+              window.removeEventListener('scroll', onFirstTouch);
+            };
+            window.addEventListener('touchstart', onFirstTouch, { passive: true, once: true });
+            window.addEventListener('click', onFirstTouch, { passive: true, once: true });
+            window.addEventListener('scroll', onFirstTouch, { passive: true, once: true });
+          });
+        }
+      }
+    };
+    startHeroVideo();
+    document.addEventListener('visibilitychange', function() {
+      if (!document.hidden && heroVideo.paused) {
+        heroVideo.play().catch(function(){});
+      }
+    });
+  }
+
   /* ---------- EFECTO "MÁQUINA DE ESCRIBIR" EN "SOLUCIONES INTEGRALES" (H1 del hero) ---------- */
   var twText = document.getElementById('heroTwText');
   var twCursor = document.getElementById('heroTwCursor');
@@ -587,6 +619,9 @@ function hcT(key){
       twText.textContent = textoOriginal;
     }
     fijarAnchoReservado();
+    if (document.fonts && document.fonts.ready) {
+      document.fonts.ready.then(fijarAnchoReservado);
+    }
     // Si la ventana cambia de tamaño (o gira el celular), el texto puede cambiar
     // de tamaño en px por los "clamp()" del CSS: volvemos a medir para que el
     // ancho reservado siga siendo el correcto.

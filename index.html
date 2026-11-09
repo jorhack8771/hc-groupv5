@@ -114,7 +114,7 @@ if (NativeEventSource) {
 <meta name="twitter:image" content="https://latamhcgroup.ai.studio/og-image.png?v=5" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700;800&family=Source+Sans+3:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700;800;900&family=Plus+Jakarta+Sans:wght@600;700;800&family=Poppins:wght@500;600;700;800&family=Source+Sans+3:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
 
 <link rel="stylesheet" href="./style.css" />
@@ -260,7 +260,20 @@ if (NativeEventSource) {
   <section class="hero" id="hero">
     <div class="container hero-container">
       <div class="hero-banner-card">
-        <img src="./portada-hero.png" alt="HC Group - Cada paciente es único" class="hero-banner-img" width="851" height="315" />
+        <video
+          id="heroVideo"
+          class="hero-banner-video"
+          autoplay
+          muted
+          loop
+          playsinline
+          preload="auto"
+          poster="./portada-hero.png"
+          aria-label="HC Group - Video institucional">
+          <source src="./1109-web.mp4" type="video/mp4" />
+          <source src="./1109(1).mp4" type="video/mp4" />
+          <img src="./portada-hero.png" alt="HC Group - Cada paciente es único" class="hero-banner-img" width="851" height="315" />
+        </video>
       </div>
       <div class="hero-grid">
         <div class="hero-copy">

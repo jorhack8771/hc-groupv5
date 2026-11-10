@@ -4,6 +4,35 @@
    de lógica, solo movido a un archivo aparte)
    ============================================================ */
 
+/* ---------- 0. CONTROL DE INICIO DESDE ARRIBA (SCROLL TO TOP GARANTIZADO) ---------- */
+if ('scrollRestoration' in history) {
+  history.scrollRestoration = 'manual';
+}
+
+function ensureViewportTop() {
+  window.scrollTo(0, 0);
+  if (document.documentElement) document.documentElement.scrollTop = 0;
+  if (document.body) document.body.scrollTop = 0;
+}
+
+// Ejecutar inmediatamente
+ensureViewportTop();
+
+// Si la URL traía un hash residual (ej. #nosotros o #hero) que cause salto involuntario, limpiarlo
+if (window.location.hash) {
+  try {
+    history.replaceState(null, '', window.location.pathname + window.location.search);
+  } catch (e) {}
+  ensureViewportTop();
+}
+
+window.addEventListener('DOMContentLoaded', ensureViewportTop);
+window.addEventListener('load', function() {
+  ensureViewportTop();
+  setTimeout(ensureViewportTop, 40);
+  setTimeout(ensureViewportTop, 150);
+});
+
 /* ============================================================
    INTERNACIONALIZACIÓN (ES / EN)
    ------------------------------------------------------------
@@ -29,7 +58,7 @@ window.HC_I18N = {
     search_aria: "Buscar",
     call_us: "Llámenos",
     contact: "Contacto",
-    btn_cotizar: "Cotizar",
+    btn_cotizar: "Nosotros",
     nav_nosotros: "Nosotros",
     nav_empresas: "Empresas",
     nav_unidades: "Unidades",
@@ -171,7 +200,7 @@ window.HC_I18N = {
     faq_q3: "¿Los equipos cuentan con garantía y servicio técnico certificado?",
     faq_a3: "Sí. Todos nuestros equipos cuentan con <strong>garantía oficial de fábrica</strong> respaldada por más de 40 marcas globales líderes (como CHISON). Contamos con ingenieros biomédicos certificados para instalación, calibración, mantenimiento preventivo y correctivo con repuestos originales.",
     faq_q4: "¿Cómo puedo solicitar una cotización o demostración?",
-    faq_a4: "Puede hacer clic en el botón <strong>\"Cotizar\"</strong> en la cabecera o rellenar el formulario de contacto al pie de la página. Uno de nuestros ejecutivos comerciales le responderá en menos de 24 horas hábiles con especificaciones técnicas, cotización formal y opciones de financiamiento institucional.",
+    faq_a4: "Puede hacer clic en el botón <strong>\"Nosotros\"</strong> en la cabecera o rellenar el formulario de contacto al pie de la página. Uno de nuestros ejecutivos comerciales le responderá en menos de 24 horas hábiles con especificaciones técnicas, cotización formal y opciones de financiamiento institucional.",
     faq_q5: "¿Cómo funciona el acceso al Portal de Clientes?",
     faq_a5: "A través del <strong>Portal Clientes</strong>, instituciones de salud y profesionales pueden gestionar órdenes de compra, descargar facturas, programar servicios técnicos y consultar el historial de mantenimiento de su parque biomédico con acceso 24/7 seguro."
   },
@@ -183,7 +212,7 @@ window.HC_I18N = {
     search_aria: "Search",
     call_us: "Call us",
     contact: "Contact",
-    btn_cotizar: "Quote",
+    btn_cotizar: "About us",
     nav_nosotros: "About us",
     nav_empresas: "Companies",
     nav_unidades: "Business units",
@@ -662,11 +691,27 @@ function hcT(key){
       // Diapositiva 0 (VIDEO): El carrusel NO PUEDE CAMBIAR hasta que termine el video
       if (currentIdx === 0) {
         if (videoEl) {
+          videoEl.muted = true;
+          videoEl.defaultMuted = true;
+          videoEl.playsInline = true;
           videoEl.currentTime = 0;
           var p = videoEl.play();
           if (p !== undefined) {
             p.catch(function() {
-              // Si el navegador bloquea la reproducción automática, avanzar con fallback
+              // Si el móvil bloquea autoplay por ahorro de batería, reproducir al primer toque
+              var unlockVideo = function() {
+                if (currentIdx === 0 && videoEl.paused) {
+                  videoEl.muted = true;
+                  videoEl.play();
+                }
+                window.removeEventListener('touchstart', unlockVideo);
+                window.removeEventListener('touchend', unlockVideo);
+                window.removeEventListener('click', unlockVideo);
+              };
+              window.addEventListener('touchstart', unlockVideo, { passive: true });
+              window.addEventListener('touchend', unlockVideo, { passive: true });
+              window.addEventListener('click', unlockVideo, { passive: true });
+
               imageSlideTimer = setTimeout(function() {
                 goToSlide(1);
               }, 12000);
@@ -818,11 +863,6 @@ function hcT(key){
       fijarAnchoReservado();
     };
 
-    if (reduceMotion){
-      // Con "reducir movimiento" dejamos el texto fijo y quitamos el cursor parpadeante
-      twText.textContent = twFull;
-      if (twCursor) twCursor.style.display = 'none';
-    } else {
       var twI = 0;
       var twPauseFull = 3000;  // tiempo que se queda la palabra completa antes de borrarse
       var twPauseEmpty = 500;  // tiempo que se queda vacío antes de volver a escribir
@@ -847,7 +887,6 @@ function hcT(key){
       }
       twText.textContent = '';
       typeNext(); // el efecto arranca y se repite en bucle para siempre (ver deleteNext/typeNext)
-    }
   }
 
   /* ---------- CONTEO ANIMADO DE ESTADÍSTICAS DEL HERO ---------- */
@@ -879,6 +918,7 @@ function hcT(key){
   var mobileMenuTrigger = document.getElementById('mobileMenuTrigger');
   var mobileMenuDrawer = document.getElementById('mobileMenuDrawer');
   var mobileMenuBackdrop = document.getElementById('mobileMenuBackdrop');
+  var mobileMenuSlot = document.getElementById('mobileMenuSlot');
   var mobileMenuOpen = false;
 
   function syncMobileMenuAria(){
@@ -901,6 +941,9 @@ function hcT(key){
     if (mobileMenuOpen) syncDrawerMaxHeight();
     mobileMenuDrawer.classList.toggle('is-open', mobileMenuOpen);
     mobileMenuDrawer.setAttribute('aria-hidden', String(!mobileMenuOpen));
+    if (mobileMenuSlot) {
+      mobileMenuSlot.classList.toggle('is-open', mobileMenuOpen);
+    }
     if (mobileMenuOpen) {
       mobileMenuDrawer.removeAttribute('inert');
     } else {
@@ -924,7 +967,7 @@ function hcT(key){
       if (firstLink) {
         setTimeout(function(){
           if (mobileMenuOpen) {
-            try { firstLink.focus({ preventScroll: true }); } catch (e) { firstLink.focus(); }
+            try { firstLink.focus({ preventScroll: true }); } catch (e) {}
           }
         }, 40);
       }
@@ -940,17 +983,29 @@ function hcT(key){
   syncMobileMenuAria();
 
   if (mobileMenuTrigger && mobileMenuDrawer) {
-    mobileMenuTrigger.addEventListener('click', function(){
+    mobileMenuTrigger.addEventListener('click', function(e){
+      e.stopPropagation();
       setMobileMenuState(!mobileMenuOpen, false);
     });
     if (mobileMenuBackdrop) {
-      mobileMenuBackdrop.addEventListener('click', function(){
+      mobileMenuBackdrop.addEventListener('click', function(e){
+        e.stopPropagation();
         setMobileMenuState(false, true);
       });
     }
     mobileMenuDrawer.querySelectorAll('a').forEach(function(link){
-      link.addEventListener('click', function(){
+      link.addEventListener('click', function(e){
+        var href = link.getAttribute('href');
         setMobileMenuState(false, false);
+        if (href && href.startsWith('#') && href.length > 1) {
+          e.preventDefault();
+          var targetEl = document.querySelector(href);
+          if (targetEl) {
+            setTimeout(function(){
+              targetEl.scrollIntoView({ behavior: 'smooth' });
+            }, 40);
+          }
+        }
       });
     });
     document.addEventListener('keydown', function(e){

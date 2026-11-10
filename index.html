@@ -48,6 +48,17 @@ if (NativeEventSource) {
   };
 }
 
+// 4. Prevenir que el navegador recuerde scroll o salte al medio de la página
+if ('scrollRestoration' in history) {
+  history.scrollRestoration = 'manual';
+}
+window.scrollTo(0, 0);
+if (window.location.hash) {
+  try {
+    history.replaceState(null, '', window.location.pathname + window.location.search);
+  } catch (e) {}
+}
+
 })();
 </script>
 <!--
@@ -182,7 +193,7 @@ if (NativeEventSource) {
           <button type="button" class="lang-btn" data-lang="en">EN</button>
         </div>
         <a href="https://www.odoo.com/es_ES/my" target="_blank" rel="noopener" class="header-btn header-btn--outline" data-portal><span data-i18n="nav_portal">Portal Clientes</span></a>
-        <a href="#contacto" class="header-btn header-btn--solid" id="headerQuoteBtn"><span data-i18n="btn_cotizar">Cotizar</span></a>
+        <a href="#nosotros" class="header-btn header-btn--solid" id="headerAboutBtn"><span data-i18n="nav_nosotros">Nosotros</span></a>
         <div class="header-search-wrap" id="headerSearchWrap">
           <button type="button" class="header-icon-btn search-toggle" id="headerSearchToggle" aria-label="Buscar" aria-expanded="false" aria-controls="shopSearch"><svg viewBox="0 0 24 24"><use href="#ic-search"/></svg></button>
           <form class="shop-search header-search-form" id="shopSearch" role="search" aria-label="Buscar en el sitio">
@@ -280,6 +291,7 @@ if (NativeEventSource) {
                 autoplay
                 muted
                 playsinline
+                webkit-playsinline
                 preload="auto"
                 poster="./portada-hero.png"
                 aria-label="HC Group - Video institucional">
@@ -308,7 +320,6 @@ if (NativeEventSource) {
           <article class="hero-slide" data-slide-index="1" aria-label="2 de 2: Tecnología médica y diagnóstico por imagen" aria-hidden="true">
             <div class="hero-slide-media">
               <img src="./portada-equipo.jpg" alt="HC Group - Equipamiento médico de alta precisión y equipo humano" class="hero-media-img hero-img-team" width="1664" height="1184" loading="lazy" />
-              <div class="hero-slide-scrim" aria-hidden="true"></div>
             </div>
 
             <!-- Floating gradient card -->
@@ -339,8 +350,8 @@ if (NativeEventSource) {
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
         </a>
 
-        <!-- Carousel Indicators / Dots for manual direct selection -->
-        <div class="hero-carousel-dots" id="heroCarouselDots" role="tablist" aria-label="Seleccionar diapositiva">
+        <!-- Carousel Indicators / Dots (hidden per user instruction) -->
+        <div class="hero-carousel-dots" id="heroCarouselDots" role="tablist" aria-label="Seleccionar diapositiva" style="display:none !important;" aria-hidden="true">
           <button type="button" class="hero-dot is-active" role="tab" aria-selected="true" aria-label="Diapositiva 1: Video institucional" data-slide-to="0"></button>
           <button type="button" class="hero-dot" role="tab" aria-selected="false" aria-label="Diapositiva 2: Tecnología diagnóstica y equipo HC Group" data-slide-to="1"></button>
         </div>
@@ -713,7 +724,7 @@ if (NativeEventSource) {
           </button>
           <div class="faq-content" id="faq-ans-4" role="region">
             <div class="faq-answer-inner">
-              <p data-i18n-html="faq_a4">Puede hacer clic en el botón <strong>"Cotizar"</strong> en la cabecera o rellenar el formulario de contacto al pie de la página. Uno de nuestros ejecutivos comerciales le responderá en menos de 24 horas hábiles con especificaciones técnicas, cotización formal y opciones de financiamiento institucional.</p>
+              <p data-i18n-html="faq_a4">Puede hacer clic en el botón <strong>"Nosotros"</strong> en la cabecera o rellenar el formulario de contacto al pie de la página. Uno de nuestros ejecutivos comerciales le responderá en menos de 24 horas hábiles con especificaciones técnicas, cotización formal y opciones de financiamiento institucional.</p>
             </div>
           </div>
         </article>

@@ -23,14 +23,15 @@
 window.HC_I18N = {
   es: {
     skip_link: "Saltar al contenido",
-    announce_html: '¡Conozca nuestra <a href="./mantenimiento.html" class="announce-link"><strong>nueva línea</strong></a> de equipos y soluciones para el sector salud! \u{1FA7A}',
-    badge_novedad: "Novedad",
+    announce_html: '¡Conozca nuestra <a href="#boletin" class="announce-link"><strong>nueva línea</strong></a> de equipos y soluciones para el sector salud! \u{1FA7A}',
+    badge_novedad: "Boletín informativo",
     search_placeholder: "Buscar",
     search_aria: "Buscar",
     call_us: "Llámenos",
     contact: "Contacto",
     btn_cotizar: "Cotizar",
     nav_nosotros: "Nosotros",
+    nav_empresas: "Empresas",
     nav_unidades: "Unidades",
     nav_diferencia: "Por qué HC",
     nav_portal: "Portal de clientes",
@@ -38,7 +39,8 @@ window.HC_I18N = {
     menu_open: "Abrir menú",
     menu_close: "Cerrar menú",
     menu_nav_label: "Navegación principal",
-    menu_boletin: "Boletín",
+    menu_boletin: "Boletín informativo",
+    nav_faq: "FAQ",
     hero_badge: "Grupo empresarial · Sector salud",
     hero_title_line1: "Transformando la salud a través de",
     hero_typed: "soluciones integrales",
@@ -158,18 +160,32 @@ window.HC_I18N = {
     review2_text: "El soporte técnico fue muy rápido resolviendo una duda de instalación. Se nota que conocen bien los equipos que venden.",
     review2_reply: "¡Gracias, Carlos! Para nosotros es muy importante que el acompañamiento no termine en la entrega, así que valoramos mucho su comentario.",
     review3_text: "Buena variedad de equipos y precios competitivos. El tiempo de entrega fue un poco más largo de lo esperado, pero el resultado valió la pena.",
-    review3_reply: "Gracias por su honestidad, Fernanda. Estamos trabajando para optimizar nuestros tiempos de entrega y seguir mejorando la experiencia de compra."
+    review3_reply: "Gracias por su honestidad, Fernanda. Estamos trabajando para optimizar nuestros tiempos de entrega y seguir mejorando la experiencia de compra.",
+    faq_badge: "Preguntas frecuentes",
+    faq_title: "Resolvemos sus dudas sobre HC GROUP.",
+    faq_intro: "Conozca más sobre nuestras marcas, servicios técnicos, garantías y presencia en Panamá, Centroamérica y el Caribe.",
+    faq_q1: "¿Qué empresas y unidades conforman HC GROUP?",
+    faq_a1: "HC GROUP integra unidades especializadas para el sector salud: <strong>Medicodont</strong> (equipamiento médico, odontológico e insumos de alta precisión), <strong>Docens</strong> (formación médica continua y educación con aval académico), <strong>Vetcare</strong> (tecnología y suministros veterinarios), y nuestra división especializada de <strong>Servicio Técnico e Ingeniería Biomédica</strong>.",
+    faq_q2: "¿Cuál es la cobertura geográfica de envíos y distribución?",
+    faq_a2: "Ofrecemos cobertura y distribución integral en <strong>Panamá, Centroamérica (Nicaragua, Costa Rica, Honduras, El Salvador, Guatemala) y el Caribe</strong>. Gestionamos logística internacional especializada y cadena de frío para equipos médicos y de laboratorio de alta sensibilidad.",
+    faq_q3: "¿Los equipos cuentan con garantía y servicio técnico certificado?",
+    faq_a3: "Sí. Todos nuestros equipos cuentan con <strong>garantía oficial de fábrica</strong> respaldada por más de 40 marcas globales líderes (como CHISON). Contamos con ingenieros biomédicos certificados para instalación, calibración, mantenimiento preventivo y correctivo con repuestos originales.",
+    faq_q4: "¿Cómo puedo solicitar una cotización o demostración?",
+    faq_a4: "Puede hacer clic en el botón <strong>\"Cotizar\"</strong> en la cabecera o rellenar el formulario de contacto al pie de la página. Uno de nuestros ejecutivos comerciales le responderá en menos de 24 horas hábiles con especificaciones técnicas, cotización formal y opciones de financiamiento institucional.",
+    faq_q5: "¿Cómo funciona el acceso al Portal de Clientes?",
+    faq_a5: "A través del <strong>Portal Clientes</strong>, instituciones de salud y profesionales pueden gestionar órdenes de compra, descargar facturas, programar servicios técnicos y consultar el historial de mantenimiento de su parque biomédico con acceso 24/7 seguro."
   },
   en: {
     skip_link: "Skip to content",
-    announce_html: 'Check out our <a href="./mantenimiento.html" class="announce-link"><strong>new line</strong></a> of equipment and solutions for the health sector! \u{1FA7A}',
-    badge_novedad: "News",
+    announce_html: 'Check out our <a href="#boletin" class="announce-link"><strong>new line</strong></a> of equipment and solutions for the health sector! \u{1FA7A}',
+    badge_novedad: "Newsletter",
     search_placeholder: "Search",
     search_aria: "Search",
     call_us: "Call us",
     contact: "Contact",
     btn_cotizar: "Quote",
     nav_nosotros: "About us",
+    nav_empresas: "Companies",
     nav_unidades: "Business units",
     nav_diferencia: "Why HC",
     nav_portal: "Client portal",
@@ -178,6 +194,7 @@ window.HC_I18N = {
     menu_close: "Close menu",
     menu_nav_label: "Main navigation",
     menu_boletin: "Newsletter",
+    nav_faq: "FAQ",
     hero_badge: "Business group · Health sector",
     hero_title_line1: "Transforming healthcare through",
     hero_typed: "comprehensive solutions",
@@ -297,7 +314,20 @@ window.HC_I18N = {
     review2_text: "Technical support was very quick resolving an installation question. You can tell they really know the equipment they sell.",
     review2_reply: "Thanks, Carlos! It is very important to us that our support does not end at delivery, so we really value your comment.",
     review3_text: "Good variety of equipment and competitive prices. Delivery took a bit longer than expected, but the result was worth the wait.",
-    review3_reply: "Thank you for your honesty, Fernanda. We are working to optimize our delivery times and keep improving the shopping experience."
+    review3_reply: "Thank you for your honesty, Fernanda. We are working to optimize our delivery times and keep improving the shopping experience.",
+    faq_badge: "Frequently Asked Questions",
+    faq_title: "Answers to your questions about HC GROUP.",
+    faq_intro: "Learn more about our brands, technical services, warranties, and regional presence in Panama, Central America, and the Caribbean.",
+    faq_q1: "Which companies and units make up HC GROUP?",
+    faq_a1: "HC GROUP integrates specialized units across healthcare: <strong>Medicodont</strong> (medical and dental equipment and high-precision supplies), <strong>Docens</strong> (continuing medical education and university-accredited training), <strong>Vetcare</strong> (veterinary technology and supplies), and our specialized <strong>Biomedical Engineering and Technical Service</strong> division.",
+    faq_q2: "What is your shipping and distribution coverage?",
+    faq_a2: "We provide comprehensive distribution and logistics across <strong>Panama, Central America (Nicaragua, Costa Rica, Honduras, El Salvador, Guatemala), and the Caribbean</strong>, ensuring specialized chain-of-custody handling for sensitive medical and laboratory systems.",
+    faq_q3: "Do equipment and systems include warranty and certified technical support?",
+    faq_a3: "Yes. All our equipment includes <strong>official factory warranty</strong> backed by over 40 global brands (including CHISON). Our team of certified biomedical engineers provides installation, calibration, preventive, and corrective maintenance with genuine parts.",
+    faq_q4: "How can I request a quote or product demonstration?",
+    faq_a4: "You can click the <strong>\"Quote\"</strong> button in the header or fill out the contact form below. A commercial specialist will contact you within 24 business hours with technical specifications, official quotes, and institutional financing options.",
+    faq_q5: "How does the Client Portal work?",
+    faq_a5: "Through the <strong>Client Portal</strong>, healthcare institutions and professionals can manage purchase orders, download invoices, schedule technical maintenance, and review service history for their biomedical fleet with secure 24/7 access."
   }
 };
 
@@ -588,6 +618,163 @@ function hcT(key){
     });
   }
 
+  /* ---------- CARRUSEL DE PORTADA (EL VIDEO DEBE TERMINAR ANTES DE CAMBIAR) ---------- */
+  (function initHeroCarousel() {
+    var frame = document.getElementById('heroCarouselFrame');
+    if (!frame) return;
+    var slides = frame.querySelectorAll('.hero-slide');
+    var dots = frame.querySelectorAll('.hero-dot');
+    var prevBtn = document.getElementById('heroPrevBtn');
+    var nextBtn = document.getElementById('heroNextBtn');
+    var videoEl = document.getElementById('heroVideo');
+    if (!slides.length) return;
+
+    var currentIdx = 0;
+    var imageSlideTimer = null;
+    var IMAGE_DURATION = 6000; // 6 segundos para diapositivas con fotos
+
+    function clearImageTimer() {
+      if (imageSlideTimer) {
+        clearTimeout(imageSlideTimer);
+        imageSlideTimer = null;
+      }
+    }
+
+    function goToSlide(idx) {
+      clearImageTimer();
+      if (idx < 0) idx = slides.length - 1;
+      if (idx >= slides.length) idx = 0;
+      currentIdx = idx;
+
+      slides.forEach(function(slide, sIdx) {
+        var isActive = sIdx === currentIdx;
+        slide.classList.toggle('is-active', isActive);
+        slide.setAttribute('aria-hidden', isActive ? 'false' : 'true');
+      });
+
+      dots.forEach(function(dot, dIdx) {
+        var isActive = dIdx === currentIdx;
+        dot.classList.toggle('is-active', isActive);
+        dot.setAttribute('aria-selected', isActive ? 'true' : 'false');
+      });
+
+      // LÓGICA DE ROTACIÓN:
+      // Diapositiva 0 (VIDEO): El carrusel NO PUEDE CAMBIAR hasta que termine el video
+      if (currentIdx === 0) {
+        if (videoEl) {
+          videoEl.currentTime = 0;
+          var p = videoEl.play();
+          if (p !== undefined) {
+            p.catch(function() {
+              // Si el navegador bloquea la reproducción automática, avanzar con fallback
+              imageSlideTimer = setTimeout(function() {
+                goToSlide(1);
+              }, 12000);
+            });
+          }
+        } else {
+          imageSlideTimer = setTimeout(function() {
+            goToSlide(1);
+          }, IMAGE_DURATION);
+        }
+      } else {
+        // Diapositivas de imágenes (1 y 2): mostrar durante 6 segundos
+        imageSlideTimer = setTimeout(function() {
+          goToSlide(currentIdx + 1);
+        }, IMAGE_DURATION);
+      }
+    }
+
+    // Escuchar el evento 'ended' del video: cuando termina, pasa a la siguiente diapositiva
+    if (videoEl) {
+      videoEl.addEventListener('ended', function() {
+        if (currentIdx === 0) {
+          goToSlide(1);
+        }
+      });
+      // Verificación de respaldo por si el navegador no dispara 'ended'
+      videoEl.addEventListener('timeupdate', function() {
+        if (currentIdx === 0 && videoEl.duration > 0 && videoEl.currentTime >= (videoEl.duration - 0.25)) {
+          videoEl.pause();
+          goToSlide(1);
+        }
+      });
+    }
+
+    if (prevBtn) {
+      prevBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        goToSlide(currentIdx - 1);
+      });
+    }
+
+    if (nextBtn) {
+      nextBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        goToSlide(currentIdx + 1);
+      });
+    }
+
+    dots.forEach(function(dot) {
+      dot.addEventListener('click', function(e) {
+        e.preventDefault();
+        var target = parseInt(dot.getAttribute('data-slide-to'), 10);
+        if (!isNaN(target)) {
+          goToSlide(target);
+        }
+      });
+    });
+
+    frame.addEventListener('mouseenter', function() {
+      if (currentIdx !== 0) {
+        clearImageTimer();
+      }
+    });
+
+    frame.addEventListener('mouseleave', function() {
+      if (currentIdx !== 0 && !imageSlideTimer) {
+        imageSlideTimer = setTimeout(function() {
+          goToSlide(currentIdx + 1);
+        }, IMAGE_DURATION);
+      }
+    });
+
+    // Soporte para gestos táctiles (swipe)
+    var touchStartX = 0;
+    var touchEndX = 0;
+    frame.addEventListener('touchstart', function(e) {
+      if (e.changedTouches && e.changedTouches[0]) {
+        touchStartX = e.changedTouches[0].screenX;
+      }
+    }, { passive: true });
+
+    frame.addEventListener('touchend', function(e) {
+      if (e.changedTouches && e.changedTouches[0]) {
+        touchEndX = e.changedTouches[0].screenX;
+        var diff = touchStartX - touchEndX;
+        if (Math.abs(diff) > 45) {
+          if (diff > 0) {
+            goToSlide(currentIdx + 1);
+          } else {
+            goToSlide(currentIdx - 1);
+          }
+        }
+      }
+    }, { passive: true });
+
+    // Navegación por teclado con flechas izquierda y derecha
+    frame.addEventListener('keydown', function(e) {
+      if (e.key === 'ArrowLeft') {
+        goToSlide(currentIdx - 1);
+      } else if (e.key === 'ArrowRight') {
+        goToSlide(currentIdx + 1);
+      }
+    });
+
+    // Iniciar inmediatamente en la diapositiva del video
+    goToSlide(0);
+  })();
+
   /* ---------- EFECTO "MÁQUINA DE ESCRIBIR" EN "SOLUCIONES INTEGRALES" (H1 del hero) ---------- */
   var twText = document.getElementById('heroTwText');
   var twCursor = document.getElementById('heroTwCursor');
@@ -595,27 +782,22 @@ function hcT(key){
   if (twText){
     var twFull = hcT('hero_typed') || twText.getAttribute('data-tw-full') || twText.textContent;
 
-    // Reservamos el ancho exacto de la palabra completa en el contenedor (tw-wrap),
-    // así el H1 nunca cambia de ancho ni salta de línea mientras se escribe/borra:
-    // el espacio para "soluciones integrales" queda fijo desde el principio.
     function fijarAnchoReservado(){
       if (!twWrap) return;
       var textoOriginal = twText.textContent;
-      twWrap.style.width = 'auto'; // quitamos el ancho fijo previo, si lo había, para medir bien
+      twWrap.style.width = 'auto';
       
       var h1El = twWrap.closest('h1');
-      if (h1El) h1El.style.minHeight = 'auto'; // reseteamos el alto antes de medir
+      if (h1El) h1El.style.minHeight = 'auto';
       
       twText.textContent = twFull;
       
-      // Si estamos en mobile y hace salto de línea, queremos reservar el ALTO del H1
       if (h1El) {
         var h1Alto = h1El.getBoundingClientRect().height;
         h1El.style.minHeight = h1Alto + 'px';
       }
       
-      var anchoCompleto = twWrap.getBoundingClientRect().width;
-      twWrap.style.width = anchoCompleto + 'px';
+      twWrap.style.width = 'auto';
       twText.textContent = textoOriginal;
     }
     fijarAnchoReservado();
@@ -1745,13 +1927,24 @@ function hcT(key){
   }
 })();
 
-// ── Boletín side tab ──────────────────────────────────
+// ── Boletín triggers (tab, anuncio y navegación) ─────
 (function(){
-  var tab = document.getElementById('boletinTab');
-  if(!tab) return;
-  tab.addEventListener('click', function(){
+  function openNewsletter(e){
+    if (e && e.preventDefault) e.preventDefault();
     var pop = document.getElementById('newsletterPop');
-    if(pop){ pop.classList.add('open'); pop.setAttribute('aria-hidden','false'); }
+    if (pop){
+      pop.classList.add('open');
+      pop.setAttribute('aria-hidden', 'false');
+      var emailInput = pop.querySelector('input[type="email"]');
+      if (emailInput) setTimeout(function(){ emailInput.focus(); }, 120);
+    }
+  }
+
+  var tab = document.getElementById('boletinTab');
+  if (tab) tab.addEventListener('click', openNewsletter);
+
+  document.querySelectorAll('a[href="#boletin"], .announce-badge').forEach(function(trigger){
+    trigger.addEventListener('click', openNewsletter);
   });
 })();
 
@@ -1902,6 +2095,44 @@ function hcT(key){
 
   window.addEventListener('scroll', onScrollSpy, { passive: true });
   setTimeout(onScrollSpy, 100);
+})();
+
+/* ---------- FAQ ACCORDION INTERACTIVITY ---------- */
+(function initFaqAccordion(){
+  var items = document.querySelectorAll('[data-faq-item]');
+  if (!items.length) return;
+
+  items.forEach(function(item){
+    var trigger = item.querySelector('.faq-trigger');
+    if (!trigger) return;
+
+    trigger.addEventListener('click', function(){
+      var isOpen = item.classList.contains('is-open');
+
+      items.forEach(function(other){
+        if (other !== item && other.classList.contains('is-open')) {
+          other.classList.remove('is-open');
+          var otherBtn = other.querySelector('.faq-trigger');
+          if (otherBtn) otherBtn.setAttribute('aria-expanded', 'false');
+        }
+      });
+
+      if (isOpen) {
+        item.classList.remove('is-open');
+        trigger.setAttribute('aria-expanded', 'false');
+      } else {
+        item.classList.add('is-open');
+        trigger.setAttribute('aria-expanded', 'true');
+      }
+    });
+  });
+
+  // Expand the first FAQ question by default for clear affordance
+  if (items[0]) {
+    items[0].classList.add('is-open');
+    var firstBtn = items[0].querySelector('.faq-trigger');
+    if (firstBtn) firstBtn.setAttribute('aria-expanded', 'true');
+  }
 })();
 
 /* ============================================================

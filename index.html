@@ -162,15 +162,18 @@ if (window.location.hash) {
 </defs></svg>
 <a class="skip-link" href="#hero" data-i18n="skip_link">Saltar al contenido</a>
 
-<!-- ============ BARRA DE ANUNCIO ============ -->
-<div class="announce-bar" role="region" aria-label="Boletín informativo">
-  <div class="container announce-inner">
-    <div class="announce-left">
-      <a href="#boletin" class="announce-badge" data-i18n="badge_novedad" title="Abrir boletín informativo">Boletín informativo</a>
-      <span class="announce-text" data-i18n-html="announce_html">¡Conozca nuestra <a href="#boletin" class="announce-link"><strong>nueva línea</strong></a> de equipos y soluciones para el sector salud! 🩺</span>
+<!-- ============ BARRA DE ANUNCIO SUPERIOR ============ -->
+<div class="top-announcement-wrap" role="region" aria-label="Próximos Eventos">
+  <div class="container top-announcement-container">
+    <div class="top-announcement-pill">
+      <div class="top-announcement-left">
+        <span class="top-announcement-text" data-i18n="top_bar_text">Próximos Eventos | Entérate de nuestras novedades</span>
+      </div>
+      <a href="#boletin" class="top-announcement-btn" data-i18n="top_bar_btn">VER PRÓXIMOS EVENTOS</a>
     </div>
   </div>
 </div>
+
 
 <!-- ============ HEADER ============ -->
 <header class="site-header" id="siteHeader">
@@ -282,7 +285,7 @@ if (window.location.hash) {
         <!-- Slides Track -->
         <div class="hero-slides" id="heroSlides">
 
-          <!-- Slide 1: Video institucional -->
+          <!-- Slide 1: Video institucional HC Group (reproducción automática inmediata al ingresar) -->
           <article class="hero-slide is-active" data-slide-index="0" aria-label="1 de 2: Video institucional HC Group" aria-hidden="false">
             <div class="hero-slide-media">
               <video
@@ -299,48 +302,40 @@ if (window.location.hash) {
                 <source src="./1109(1).mp4" type="video/mp4" />
                 <img src="./portada-hero.png" alt="HC Group - Tecnología médica" class="hero-media-img" width="851" height="315" />
               </video>
-              <div class="hero-slide-scrim" aria-hidden="true"></div>
+              <div class="hero-video-overlay" aria-hidden="true"></div>
             </div>
 
-            <!-- Floating gradient card (matches user reference design) -->
-            <!-- Floating gradient card (matches user reference design) -->
-            <div class="hero-card-panel">
-              <div class="hero-gradient-card">
-                <h1 class="hero-card-heading">
-                  <span data-i18n="hero_title_line1">Transformando la salud a través de</span>
-                  <em class="hero-card-highlight"><span class="tw-wrap" id="heroTwWrap"><span class="tw-text" id="heroTwText" data-tw-full="soluciones integrales">soluciones integrales</span><span class="tw-cursor" id="heroTwCursor" aria-hidden="true"></span></span></em>
-                </h1>
-                <p class="hero-card-desc" data-i18n="hero_slide1_desc">
-                  Más de 40 marcas líderes a nivel mundial respaldan nuestro portafolio de soluciones con soporte técnico certificado y acompañamiento especializado con presencia regional.
-                </p>
-                <!-- Accent Scroll Down Button inside corner -->
-                <a href="#nosotros" class="hero-scroll-accent" aria-label="Desplazarse a Nosotros" title="Conozca más sobre HC Group">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
-                </a>
-              </div>
+            <div class="hero-banner-content">
+              <h2 class="hero-banner-title">
+                Tecnología médica y diagnóstico por imagen de última generación
+              </h2>
+              <p class="hero-banner-desc">
+                Equipamiento biomédico de alta precisión, soporte técnico certificado y programas de educación continua en alianza con prestigiosas instituciones académicas.
+              </p>
             </div>
           </article>
 
-          <!-- Slide 2: Tecnología médica y diagnóstico por imagen -->
-          <article class="hero-slide" data-slide-index="1" aria-label="2 de 2: Tecnología médica y diagnóstico por imagen" aria-hidden="true">
+          <!-- Slide 2: Equipamiento de Ultrasonido CHISON y Soluciones Integrales -->
+          <article class="hero-slide" data-slide-index="1" aria-label="2 de 2: Soluciones integrales en salud y diagnóstico por ultrasonido" aria-hidden="true">
             <div class="hero-slide-media">
-              <img src="./portada-equipo.jpg" alt="HC Group - Equipamiento médico de alta precisión y equipo humano" class="hero-media-img hero-img-team" width="1664" height="1184" loading="lazy" />
+              <img
+                src="./portada-ultrasonido.jpg"
+                alt="HC Group - Soluciones integrales en tecnología médica y equipamiento de ultrasonido CHISON"
+                class="hero-media-img hero-img-ultrasound"
+                width="1728"
+                height="1152"
+                loading="lazy" />
+              <div class="hero-ultrasound-overlay" aria-hidden="true"></div>
             </div>
 
-            <!-- Floating gradient card -->
-            <div class="hero-card-panel">
-              <div class="hero-gradient-card">
-                <h2 class="hero-card-heading">
-                  Tecnología médica y diagnóstico por imagen de última generación.
-                </h2>
-                <p class="hero-card-desc">
-                  Sistemas de ultrasonido CHISON con Doppler color, tecnología biomédica y programas de educación continua en alianza con prestigiosas instituciones académicas.
-                </p>
-                <!-- Accent Scroll Down Button inside corner -->
-                <a href="#nosotros" class="hero-scroll-accent" aria-label="Desplazarse a Nosotros" title="Conozca más sobre HC Group">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
-                </a>
-              </div>
+            <div class="hero-banner-content">
+              <h1 class="hero-banner-title">
+                <span data-i18n="hero_title_line1">Transformando la salud a través de</span>
+                <em class="hero-card-highlight"><span class="tw-wrap" id="heroTwWrap"><span class="tw-text" id="heroTwText" data-tw-full="soluciones integrales">soluciones integrales</span><span class="tw-cursor" id="heroTwCursor" aria-hidden="true"></span></span></em>
+              </h1>
+              <p class="hero-banner-desc" data-i18n="hero_slide1_desc">
+                Respaldamos nuestro portafolio con más de 40 marcas líderes a nivel mundial, ofreciendo soporte técnico certificado y acompañamiento especializado en toda la región.
+              </p>
             </div>
           </article>
 

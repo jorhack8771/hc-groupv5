@@ -52,6 +52,8 @@ window.addEventListener('load', function() {
 window.HC_I18N = {
   es: {
     skip_link: "Saltar al contenido",
+    top_bar_text: "Próximos Eventos | Entérate de nuestras novedades",
+    top_bar_btn: "VER PRÓXIMOS EVENTOS",
     announce_html: '¡Conozca nuestra <a href="#boletin" class="announce-link"><strong>nueva línea</strong></a> de equipos y soluciones para el sector salud! \u{1FA7A}',
     badge_novedad: "Boletín informativo",
     search_placeholder: "Buscar",
@@ -206,6 +208,8 @@ window.HC_I18N = {
   },
   en: {
     skip_link: "Skip to content",
+    top_bar_text: "Upcoming Events | Stay updated with our news",
+    top_bar_btn: "VIEW UPCOMING EVENTS",
     announce_html: 'Check out our <a href="#boletin" class="announce-link"><strong>new line</strong></a> of equipment and solutions for the health sector! \u{1FA7A}',
     badge_novedad: "Newsletter",
     search_placeholder: "Search",
@@ -617,32 +621,52 @@ function hcT(key){
 
   /* ---------- REPRODUCCIÓN AUTOMÁTICA DEL VIDEO DE PORTADA ---------- */
   var heroVideo = document.getElementById('heroVideo');
+  function playHeroVideoNow() {
+    if (!heroVideo) return;
+    try {
+      heroVideo.muted = true;
+      heroVideo.defaultMuted = true;
+      heroVideo.volume = 0;
+      heroVideo.playsInline = true;
+    } catch(e) {}
+
+    if (heroVideo.paused) {
+      var p = heroVideo.play();
+      if (p !== undefined) {
+        p.catch(function() {
+          var unlockOnAction = function() {
+            if (heroVideo && heroVideo.paused) {
+              heroVideo.muted = true;
+              heroVideo.play().catch(function(){});
+            }
+            ['touchstart', 'touchend', 'click', 'scroll', 'pointerdown'].forEach(function(ev) {
+              window.removeEventListener(ev, unlockOnAction, { capture: true });
+            });
+          };
+          ['touchstart', 'touchend', 'click', 'scroll', 'pointerdown'].forEach(function(ev) {
+            window.addEventListener(ev, unlockOnAction, { capture: true, passive: true, once: true });
+          });
+        });
+      }
+    }
+  }
+
   if (heroVideo) {
     heroVideo.muted = true;
     heroVideo.defaultMuted = true;
     heroVideo.volume = 0;
-    var startHeroVideo = function() {
-      if (heroVideo.paused) {
-        var p = heroVideo.play();
-        if (p !== undefined) {
-          p.catch(function() {
-            var onFirstTouch = function() {
-              heroVideo.play().catch(function(){});
-              window.removeEventListener('touchstart', onFirstTouch);
-              window.removeEventListener('click', onFirstTouch);
-              window.removeEventListener('scroll', onFirstTouch);
-            };
-            window.addEventListener('touchstart', onFirstTouch, { passive: true, once: true });
-            window.addEventListener('click', onFirstTouch, { passive: true, once: true });
-            window.addEventListener('scroll', onFirstTouch, { passive: true, once: true });
-          });
-        }
-      }
-    };
-    startHeroVideo();
+    heroVideo.playsInline = true;
+
+    // Intentar reproducir inmediatamente
+    playHeroVideoNow();
+
+    // Reintentar en cuanto el navegador haya cargado suficientes datos
+    heroVideo.addEventListener('loadeddata', playHeroVideoNow, { once: true });
+    heroVideo.addEventListener('canplay', playHeroVideoNow, { once: true });
+
     document.addEventListener('visibilitychange', function() {
       if (!document.hidden && heroVideo.paused) {
-        heroVideo.play().catch(function(){});
+        playHeroVideoNow();
       }
     });
   }
@@ -660,7 +684,7 @@ function hcT(key){
 
     var currentIdx = 0;
     var imageSlideTimer = null;
-    var IMAGE_DURATION = 6000; // 6 segundos para diapositivas con fotos
+    var IMAGE_DURATION = 7000; // 7 segundos para diapositivas con fotos
 
     function clearImageTimer() {
       if (imageSlideTimer) {
@@ -688,42 +712,24 @@ function hcT(key){
       });
 
       // LÓGICA DE ROTACIÓN:
-      // Diapositiva 0 (VIDEO): El carrusel NO PUEDE CAMBIAR hasta que termine el video
-      if (currentIdx === 0) {
-        if (videoEl) {
-          videoEl.muted = true;
-          videoEl.defaultMuted = true;
-          videoEl.playsInline = true;
-          videoEl.currentTime = 0;
-          var p = videoEl.play();
-          if (p !== undefined) {
-            p.catch(function() {
-              // Si el móvil bloquea autoplay por ahorro de batería, reproducir al primer toque
-              var unlockVideo = function() {
-                if (currentIdx === 0 && videoEl.paused) {
-                  videoEl.muted = true;
-                  videoEl.play();
-                }
-                window.removeEventListener('touchstart', unlockVideo);
-                window.removeEventListener('touchend', unlockVideo);
-                window.removeEventListener('click', unlockVideo);
-              };
-              window.addEventListener('touchstart', unlockVideo, { passive: true });
-              window.addEventListener('touchend', unlockVideo, { passive: true });
-              window.addEventListener('click', unlockVideo, { passive: true });
+      var activeSlide = slides[currentIdx];
+      var slideVideo = activeSlide ? activeSlide.querySelector('video') : null;
 
-              imageSlideTimer = setTimeout(function() {
-                goToSlide(1);
-              }, 12000);
-            });
-          }
-        } else {
-          imageSlideTimer = setTimeout(function() {
-            goToSlide(1);
-          }, IMAGE_DURATION);
+      if (slideVideo) {
+        slideVideo.muted = true;
+        slideVideo.defaultMuted = true;
+        slideVideo.playsInline = true;
+        if (slideVideo.ended || slideVideo.currentTime >= (slideVideo.duration - 0.5)) {
+          slideVideo.currentTime = 0;
+        }
+        var p = slideVideo.play();
+        if (p !== undefined) {
+          p.catch(function() {
+            playHeroVideoNow();
+          });
         }
       } else {
-        // Diapositivas de imágenes (1 y 2): mostrar durante 6 segundos
+        // Diapositiva con imagen: mostrar durante 7 segundos y luego volver al video
         imageSlideTimer = setTimeout(function() {
           goToSlide(currentIdx + 1);
         }, IMAGE_DURATION);
@@ -733,18 +739,24 @@ function hcT(key){
     // Escuchar el evento 'ended' del video: cuando termina, pasa a la siguiente diapositiva
     if (videoEl) {
       videoEl.addEventListener('ended', function() {
-        if (currentIdx === 0) {
-          goToSlide(1);
-        }
+        goToSlide(currentIdx + 1);
       });
       // Verificación de respaldo por si el navegador no dispara 'ended'
       videoEl.addEventListener('timeupdate', function() {
-        if (currentIdx === 0 && videoEl.duration > 0 && videoEl.currentTime >= (videoEl.duration - 0.25)) {
+        if (videoEl.duration > 0 && videoEl.currentTime >= (videoEl.duration - 0.25)) {
           videoEl.pause();
-          goToSlide(1);
+          goToSlide(currentIdx + 1);
         }
       });
     }
+
+    // Permitir clic en el marco para asegurar reproducción si estuviese pausado
+    frame.addEventListener('click', function(e) {
+      if (e.target.closest('#heroPrevBtn') || e.target.closest('#heroNextBtn') || e.target.closest('.hero-nav-arrow')) return;
+      if (videoEl && currentIdx === 0 && videoEl.paused) {
+        videoEl.play().catch(function(){});
+      }
+    });
 
     if (prevBtn) {
       prevBtn.addEventListener('click', function(e) {

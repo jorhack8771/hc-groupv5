@@ -53,7 +53,24 @@ window.HC_I18N = {
   es: {
     skip_link: "Saltar al contenido",
     top_bar_text: "Próximos Eventos | Entérate de nuestras novedades",
+    top_bar_text_html: '<svg class="top-bar-icon" width="15" height="15" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2.5"/><path d="M16 3v4M8 3v4M3 10h18"/></svg><strong class="top-bar-title">Próximos Eventos</strong><span class="top-bar-sep" aria-hidden="true"></span><span class="top-bar-sub">Entérate de nuestras novedades</span>',
     top_bar_btn: "VER PRÓXIMOS EVENTOS",
+    pop_title: "Próximos Eventos y Novedades",
+    pop_desc: "Suscríbase a nuestro boletín para enterarse de nuevos lanzamientos, equipos médicos, capacitaciones y próximos eventos de HC GROUP.",
+    pop_submit_aria: "Suscribirse",
+    pop_invalid_email: "Escribe un correo válido.",
+    pop_sending: "Enviando su suscripción…",
+    pop_success_title: "¡Listo!",
+    pop_success_sub: "Te mantendremos al tanto de nuestras novedades.",
+    empresas_title_html: '<span class="empresas-title-accent">Empresas</span> que integran<br>nuestro grupo',
+    emp_medicodont_desc: "Suministramos equipos médicos y servicios de vanguardia para mejorar la salud humana.",
+    emp_vetcare_desc: "Soluciones integrales en equipos médicos veterinarios.",
+    emp_docens_desc: "Es la plataforma de formación que impulsa a profesionales de la salud.",
+    emp_servicio_title: "Servicio Técnico",
+    emp_servicio_desc: "Brindamos respaldo integral con técnicos certificados, atención rápida en la región y soluciones de mantenimiento adaptadas.",
+    emp_servicio_mark_top: "SERVICIO",
+    emp_servicio_mark_bot: "TÉCNICO",
+    emp_cta: "Solicitar información",
     announce_html: '¡Conozca nuestra <a href="#boletin" class="announce-link"><strong>nueva línea</strong></a> de equipos y soluciones para el sector salud! \u{1FA7A}',
     badge_novedad: "Boletín informativo",
     search_placeholder: "Buscar",
@@ -209,7 +226,24 @@ window.HC_I18N = {
   en: {
     skip_link: "Skip to content",
     top_bar_text: "Upcoming Events | Stay updated with our news",
+    top_bar_text_html: '<svg class="top-bar-icon" width="15" height="15" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2.5"/><path d="M16 3v4M8 3v4M3 10h18"/></svg><strong class="top-bar-title">Upcoming Events</strong><span class="top-bar-sep" aria-hidden="true"></span><span class="top-bar-sub">Stay updated with our news</span>',
     top_bar_btn: "VIEW UPCOMING EVENTS",
+    pop_title: "Upcoming Events & Updates",
+    pop_desc: "Subscribe to our newsletter to receive updates on new medical equipment, product launches, training sessions, and upcoming HC GROUP events.",
+    pop_submit_aria: "Subscribe",
+    pop_invalid_email: "Please enter a valid email address.",
+    pop_sending: "Sending your subscription…",
+    pop_success_title: "All set!",
+    pop_success_sub: "We will keep you updated with our latest news.",
+    empresas_title_html: '<span class="empresas-title-accent">Companies</span> within<br>our group',
+    emp_medicodont_desc: "We supply cutting-edge medical equipment and services to advance human healthcare.",
+    emp_vetcare_desc: "Comprehensive solutions in veterinary medical equipment.",
+    emp_docens_desc: "The continuing education platform empowering healthcare professionals.",
+    emp_servicio_title: "Technical Service",
+    emp_servicio_desc: "We provide comprehensive support with certified engineers, fast regional response, and tailored maintenance solutions.",
+    emp_servicio_mark_top: "TECHNICAL",
+    emp_servicio_mark_bot: "SERVICE",
+    emp_cta: "Request information",
     announce_html: 'Check out our <a href="#boletin" class="announce-link"><strong>new line</strong></a> of equipment and solutions for the health sector! \u{1FA7A}',
     badge_novedad: "Newsletter",
     search_placeholder: "Search",
@@ -621,8 +655,14 @@ function hcT(key){
 
   /* ---------- REPRODUCCIÓN AUTOMÁTICA DEL VIDEO DE PORTADA ---------- */
   var heroVideo = document.getElementById('heroVideo');
+  function isHeroVideoSlideActive() {
+    if (!heroVideo) return false;
+    var slide = heroVideo.closest ? heroVideo.closest('.hero-slide') : null;
+    return !slide || slide.classList.contains('is-active');
+  }
+
   function playHeroVideoNow() {
-    if (!heroVideo) return;
+    if (!heroVideo || !isHeroVideoSlideActive()) return;
     try {
       heroVideo.muted = true;
       heroVideo.defaultMuted = true;
@@ -635,7 +675,7 @@ function hcT(key){
       if (p !== undefined) {
         p.catch(function() {
           var unlockOnAction = function() {
-            if (heroVideo && heroVideo.paused) {
+            if (heroVideo && heroVideo.paused && isHeroVideoSlideActive()) {
               heroVideo.muted = true;
               heroVideo.play().catch(function(){});
             }
@@ -665,7 +705,7 @@ function hcT(key){
     heroVideo.addEventListener('canplay', playHeroVideoNow, { once: true });
 
     document.addEventListener('visibilitychange', function() {
-      if (!document.hidden && heroVideo.paused) {
+      if (!document.hidden && heroVideo.paused && isHeroVideoSlideActive()) {
         playHeroVideoNow();
       }
     });
@@ -684,6 +724,7 @@ function hcT(key){
 
     var currentIdx = 0;
     var imageSlideTimer = null;
+    var videoAdvanceLock = false;
     var IMAGE_DURATION = 7000; // 7 segundos para diapositivas con fotos
 
     function clearImageTimer() {
@@ -695,6 +736,7 @@ function hcT(key){
 
     function goToSlide(idx) {
       clearImageTimer();
+      var prevIdx = currentIdx;
       if (idx < 0) idx = slides.length - 1;
       if (idx >= slides.length) idx = 0;
       currentIdx = idx;
@@ -716,11 +758,12 @@ function hcT(key){
       var slideVideo = activeSlide ? activeSlide.querySelector('video') : null;
 
       if (slideVideo) {
+        videoAdvanceLock = false;
         slideVideo.muted = true;
         slideVideo.defaultMuted = true;
         slideVideo.playsInline = true;
-        if (slideVideo.ended || slideVideo.currentTime >= (slideVideo.duration - 0.5)) {
-          slideVideo.currentTime = 0;
+        if (prevIdx !== currentIdx || slideVideo.ended || (slideVideo.duration > 0 && slideVideo.currentTime >= (slideVideo.duration - 0.5))) {
+          try { slideVideo.currentTime = 0; } catch (e) {}
         }
         var p = slideVideo.play();
         if (p !== undefined) {
@@ -729,6 +772,9 @@ function hcT(key){
           });
         }
       } else {
+        if (videoEl && !videoEl.paused) {
+          videoEl.pause();
+        }
         // Diapositiva con imagen: mostrar durante 7 segundos y luego volver al video
         imageSlideTimer = setTimeout(function() {
           goToSlide(currentIdx + 1);
@@ -736,16 +782,25 @@ function hcT(key){
       }
     }
 
+    function advanceFromVideo() {
+      if (currentIdx !== 0 || videoAdvanceLock) return;
+      videoAdvanceLock = true;
+      if (videoEl && !videoEl.paused) {
+        videoEl.pause();
+      }
+      goToSlide(currentIdx + 1);
+    }
+
     // Escuchar el evento 'ended' del video: cuando termina, pasa a la siguiente diapositiva
     if (videoEl) {
       videoEl.addEventListener('ended', function() {
-        goToSlide(currentIdx + 1);
+        advanceFromVideo();
       });
       // Verificación de respaldo por si el navegador no dispara 'ended'
       videoEl.addEventListener('timeupdate', function() {
+        if (currentIdx !== 0 || videoEl.paused || videoEl.seeking || videoAdvanceLock) return;
         if (videoEl.duration > 0 && videoEl.currentTime >= (videoEl.duration - 0.25)) {
-          videoEl.pause();
-          goToSlide(currentIdx + 1);
+          advanceFromVideo();
         }
       });
     }
@@ -1634,9 +1689,6 @@ function hcT(key){
   var popMsg = document.getElementById('popMsg');
   function openPop(){ if(pop){ pop.classList.add('open'); pop.setAttribute('aria-hidden','false'); } }
   function closePop(){ if(pop){ pop.classList.remove('open'); pop.setAttribute('aria-hidden','true'); } }
-  if (pop && !store.get('hc-newsletter')){
-    setTimeout(openPop, 1500);
-  }
   if (popClose) popClose.addEventListener('click', function(){ store.set('hc-newsletter','closed'); closePop(); });
   if (pop) pop.addEventListener('click', function(e){ if(e.target === pop){ store.set('hc-newsletter','closed'); closePop(); } });
   document.addEventListener('keydown', function(e){ if(e.key==='Escape' && pop && pop.classList.contains('open')){ store.set('hc-newsletter','closed'); closePop(); } });
@@ -1647,17 +1699,23 @@ function hcT(key){
       if (!isEmail(email)){
         popMsg.className = 'pop-msg';
         popMsg.style.color = '#ffd9d9';
-        popMsg.textContent = 'Escribe un correo válido.';
+        popMsg.textContent = hcT('pop_invalid_email') || 'Escribe un correo válido.';
         return;
       }
       var popSubmitBtn = popForm.querySelector('button[type="submit"]');
       if (popSubmitBtn) popSubmitBtn.disabled = true;
       popMsg.style.color = '';
       popMsg.className = 'pop-msg';
-      popMsg.innerHTML = '<span class="fs-spinner"></span><span class="fs-text">Enviando su suscripción…</span>';
+      popMsg.innerHTML = '<span class="fs-spinner"></span><span class="fs-text"></span>';
+      popMsg.querySelector('.fs-text').textContent = hcT('pop_sending') || 'Enviando su suscripción…';
 
       setTimeout(function(){
-        popMsg.innerHTML = '<span class="fs-check"><svg viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg></span><span class="fs-text">¡Listo!<span>Te mantendremos al tanto de nuestras novedades.</span></span>';
+        popMsg.innerHTML = '<span class="fs-check"><svg viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg></span><span class="fs-text"></span>';
+        var fsText = popMsg.querySelector('.fs-text');
+        fsText.textContent = hcT('pop_success_title') || '¡Listo!';
+        var subSpan = document.createElement('span');
+        subSpan.textContent = hcT('pop_success_sub') || 'Te mantendremos al tanto de nuestras novedades.';
+        fsText.appendChild(subSpan);
         store.set('hc-newsletter','subscribed');
         popForm.reset();
         if (popSubmitBtn) popSubmitBtn.disabled = false;
@@ -2549,4 +2607,33 @@ function hcT(key){
   setTimeout(adjustBuilderBotElements, 700);
   setTimeout(adjustBuilderBotElements, 1500);
   setTimeout(adjustBuilderBotElements, 3000);
+})();
+
+/* ---------- TARJETAS DE EMPRESAS DEL GRUPO -> FORMULARIO ---------- */
+(function(){
+  var cards = document.querySelectorAll('.empresa-card[data-unit]');
+  if (!cards.length) return;
+
+  cards.forEach(function(card){
+    card.addEventListener('click', function(){
+      var unit = card.getAttribute('data-unit');
+      var sel = document.getElementById('segmento');
+      if (sel && unit){
+        sel.value = unit;
+        sel.classList.remove('nf-placeholder', 'invalid');
+        sel.dispatchEvent(new Event('change', { bubbles: true }));
+      }
+      var contacto = document.getElementById('contacto');
+      if (contacto){
+        contacto.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+      setTimeout(function(){
+        var nombre = document.getElementById('nombre');
+        if (nombre && typeof nombre.focus === 'function'){
+          try { nombre.focus({ preventScroll: true }); }
+          catch(e){ nombre.focus(); }
+        }
+      }, 450);
+    });
+  });
 })();

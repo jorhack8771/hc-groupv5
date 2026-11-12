@@ -4,6 +4,13 @@
    de lógica, solo movido a un archivo aparte)
    ============================================================ */
 
+/* ---------- ASSETS CATÁLOGO VETCARE (resolución estática Vite) ---------- */
+var VETCARE_CATALOG_MODULES = import.meta.glob('./src/assets/vetcare-catalog/*.webp', { eager: true, query: '?url', import: 'default' });
+var VETCARE_CATALOG_PAGES = Object.keys(VETCARE_CATALOG_MODULES)
+  .sort()
+  .map(function(key){ return VETCARE_CATALOG_MODULES[key]; });
+var VETCARE_PDF_URL = new URL('./CATÁLOGO VETCARE_compressed.pdf', import.meta.url).href;
+
 /* ---------- 0. CONTROL DE INICIO DESDE ARRIBA (SCROLL TO TOP GARANTIZADO) ---------- */
 if ('scrollRestoration' in history) {
   history.scrollRestoration = 'manual';
@@ -71,6 +78,23 @@ window.HC_I18N = {
     emp_servicio_mark_top: "SERVICIO",
     emp_servicio_mark_bot: "TÉCNICO",
     emp_cta: "Solicitar información",
+    emp_vetcare_cta: "Ver catálogo",
+    vc_modal_title: "Catálogo Vetcare · Equipos Veterinarios",
+    vc_modal_meta: "40 páginas · Ultrasonidos, Cirugía, Grooming y Equipos Básicos",
+    vc_prev_aria: "Página anterior",
+    vc_next_aria: "Página siguiente",
+    vc_dl_aria: "Descargar catálogo Vetcare en PDF",
+    vc_btn_download_icon: "Descargar PDF",
+    vc_page_of: "Página {n} / {total}",
+    vc_page_alt: "Página {n} del catálogo Vetcare",
+    vc_viewer_hint: "Use el ícono de descarga y envíe sus datos para obtener el PDF",
+    vc_viewer_hint_unlocked: "Catálogo desbloqueado · Ya puede descargar el PDF completo",
+    vc_contact_notice: "Catálogo Vetcare seleccionado: complete su nombre, correo y teléfono/WhatsApp y presione Enviar solicitud para iniciar la descarga automática del PDF.",
+    vc_err_fields: "Complete su nombre, correo y teléfono/WhatsApp válido para descargar el catálogo.",
+    vc_err_phone: "Ingrese un número de teléfono o WhatsApp válido para descargar el catálogo.",
+    vc_redirect_dl_title: "¡Datos enviados! Descargando catálogo…",
+    vc_redirect_dl_sub: "La descarga del Catálogo Vetcare comenzó automáticamente. Nuestro equipo le contactará pronto.",
+    vc_btn_download_again: "Descargar Catálogo Vetcare (PDF)",
     announce_html: '¡Conozca nuestra <a href="#boletin" class="announce-link"><strong>nueva línea</strong></a> de equipos y soluciones para el sector salud! \u{1FA7A}',
     badge_novedad: "Boletín informativo",
     search_placeholder: "Buscar",
@@ -244,6 +268,23 @@ window.HC_I18N = {
     emp_servicio_mark_top: "TECHNICAL",
     emp_servicio_mark_bot: "SERVICE",
     emp_cta: "Request information",
+    emp_vetcare_cta: "View catalog",
+    vc_modal_title: "Vetcare Catalog · Veterinary Equipment",
+    vc_modal_meta: "40 pages · Ultrasound, Surgery, Grooming & Basic Equipment",
+    vc_prev_aria: "Previous page",
+    vc_next_aria: "Next page",
+    vc_dl_aria: "Download Vetcare catalog PDF",
+    vc_btn_download_icon: "Download PDF",
+    vc_page_of: "Page {n} / {total}",
+    vc_page_alt: "Vetcare catalog page {n}",
+    vc_viewer_hint: "Use the download icon and submit your contact details to get the PDF",
+    vc_viewer_hint_unlocked: "Catalog unlocked · Full PDF ready for download",
+    vc_contact_notice: "Vetcare Catalog selected: complete your name, email & phone/WhatsApp and click Send request to start the automatic PDF download.",
+    vc_err_fields: "Please complete your name, email, and valid phone/WhatsApp to download the catalog.",
+    vc_err_phone: "Please enter a valid phone or WhatsApp number to download the catalog.",
+    vc_redirect_dl_title: "Details sent! Downloading catalog…",
+    vc_redirect_dl_sub: "Your Vetcare Catalog download started automatically. Our team will reach out shortly.",
+    vc_btn_download_again: "Download Vetcare Catalog (PDF)",
     announce_html: 'Check out our <a href="#boletin" class="announce-link"><strong>new line</strong></a> of equipment and solutions for the health sector! \u{1FA7A}',
     badge_novedad: "Newsletter",
     search_placeholder: "Search",
@@ -643,6 +684,7 @@ function hcT(key){
     // Las reseñas (texto + respuesta de HC GROUP) se vuelven a pintar en el idioma nuevo
     if (typeof renderReviews === 'function') renderReviews();
     if (typeof syncMobileMenuAria === 'function') syncMobileMenuAria();
+    if (typeof window.refreshVetcareCatalogUI === 'function') window.refreshVetcareCatalogUI();
   }
   langButtons.forEach(function(btn){
     btn.addEventListener('click', function(){ setLanguage(btn.getAttribute('data-lang')); });
@@ -1255,69 +1297,160 @@ function hcT(key){
     });
   }
 
+  var vcPendingPdfDownload = false;
+  var vcPdfUnlocked = false;
+  var vcContactNoticeEl = document.getElementById('vcContactCatalogNotice');
+  var vcViewerCopyRefreshFn = null;
+
+  function syncVcContactNotice(){
+    if (!vcContactNoticeEl) return;
+    if (vcPendingPdfDownload){
+      vcContactNoticeEl.textContent = hcT('vc_contact_notice');
+      vcContactNoticeEl.hidden = false;
+    } else {
+      vcContactNoticeEl.hidden = true;
+      vcContactNoticeEl.textContent = '';
+    }
+  }
+
+  function triggerVetcarePdfDownload(){
+    if (!VETCARE_PDF_URL) return;
+    var a = document.createElement('a');
+    a.href = VETCARE_PDF_URL;
+    a.download = 'Catalogo-Vetcare-HC-Group.pdf';
+    a.style.display = 'none';
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(function(){
+      if (a.parentNode) a.parentNode.removeChild(a);
+    }, 150);
+  }
+
   var form = document.getElementById('leadForm');
   var status = document.getElementById('formStatus');
   function isEmail(v){ return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v); }
+
+  function selectSegmentoUnit(unitValue){
+    if (!form || !form.segmento) return;
+    var sel = form.segmento;
+    sel.value = unitValue;
+    sel.classList.remove('nf-placeholder', 'invalid');
+    if (segmentoWrap){
+      var valTextEl = document.getElementById('segmentoValueText');
+      var triggerEl = document.getElementById('segmentoTrigger');
+      var opts = segmentoWrap.querySelectorAll('.custom-select-option');
+      if (triggerEl) triggerEl.classList.remove('invalid');
+      opts.forEach(function(opt){
+        var match = opt.getAttribute('data-value') === unitValue;
+        opt.classList.toggle('selected', match);
+        opt.setAttribute('aria-selected', match ? 'true' : 'false');
+        if (match && valTextEl){
+          valTextEl.textContent = opt.textContent;
+          valTextEl.classList.remove('placeholder');
+        }
+      });
+    }
+    sel.dispatchEvent(new Event('change', { bubbles: true }));
+  }
+
   if (form){
+    if (form.segmento){
+      form.segmento.addEventListener('change', function(){
+        if (form.segmento.value !== 'vetcare' && vcPendingPdfDownload){
+          vcPendingPdfDownload = false;
+          syncVcContactNotice();
+        }
+      });
+    }
     form.addEventListener('submit', function(e){
       e.preventDefault();
       // Anti-spam: si el campo trampa está lleno, lo envió un bot -> ignorar
       if (form.empresa_web && form.empresa_web.value.trim() !== ''){ return; }
       status.className = 'form-status';
       status.textContent = '';
-      var nombre = form.nombre, email = form.email, segmento = form.segmento;
-      [nombre, email, segmento].forEach(function(f){ f.classList.remove('invalid'); });
+      var nombre = form.nombre, email = form.email, telefono = form.telefono, segmento = form.segmento;
+      [nombre, email, telefono, segmento].forEach(function(f){ if (f) f.classList.remove('invalid'); });
       var segmentoTriggerEl = document.getElementById('segmentoTrigger');
       if (segmentoTriggerEl) segmentoTriggerEl.classList.remove('invalid');
 
+      var isVetcareCatalogFlow = Boolean(vcPendingPdfDownload && segmento.value === 'vetcare');
       var ok = true;
-      if (!nombre.value.trim()){ nombre.classList.add('invalid'); ok = false; }
-      if (!isEmail(email.value.trim())){ email.classList.add('invalid'); ok = false; }
+      if (!nombre.value.trim() || (isVetcareCatalogFlow && nombre.value.trim().length < 2)){
+        nombre.classList.add('invalid');
+        ok = false;
+      }
+      if (!isEmail(email.value.trim())){
+        email.classList.add('invalid');
+        ok = false;
+      }
       if (!segmento.value){
         segmento.classList.add('invalid');
         if (segmentoTriggerEl) segmentoTriggerEl.classList.add('invalid');
         ok = false;
       }
+      if (isVetcareCatalogFlow){
+        var telDigits = telefono && telefono.value ? telefono.value.replace(/\D/g, '') : '';
+        if (telDigits.length < 6){
+          if (telefono) telefono.classList.add('invalid');
+          ok = false;
+        }
+      }
 
       if (!ok){
         status.className = 'form-status error';
-        status.textContent = hcT('form_error_fields');
+        if (isVetcareCatalogFlow){
+          var onlyPhoneBad = !nombre.classList.contains('invalid') && !email.classList.contains('invalid') && !segmento.classList.contains('invalid') && telefono && telefono.classList.contains('invalid');
+          status.textContent = onlyPhoneBad ? hcT('vc_err_phone') : hcT('vc_err_fields');
+        } else {
+          status.textContent = hcT('form_error_fields');
+        }
         return;
       }
-      var prefijo = form.prefijo, telefono = form.telefono, mensaje = form.mensaje;
-      var unidadTexto = segmento.options[segmento.selectedIndex].text;
+      var prefijo = form.prefijo, mensaje = form.mensaje;
+      var unidadTexto = isVetcareCatalogFlow
+        ? 'Vetcare — veterinaria (Catálogo PDF)'
+        : segmento.options[segmento.selectedIndex].text;
       var telefonoCompleto = telefono.value.trim() ? (prefijo.value + ' ' + telefono.value.trim()) : hcT('mail_no_phone');
+      var mensajeFinal = mensaje.value.trim() || (isVetcareCatalogFlow ? 'Solicitud de descarga del Catálogo Vetcare PDF' : '');
 
       var submitBtn = form.querySelector('button[type="submit"]');
       if (submitBtn) submitBtn.disabled = true;
 
-      // El formulario ya NO abre el correo: solo guarda la solicitud
-      // en Google Sheets (pestaña "Solicitudes contacto").
+      // El formulario guarda la solicitud en Google Sheets (pestaña "Solicitudes contacto").
       guardarContactoEnGoogleSheets({
         nombre: nombre.value.trim(),
         email: email.value.trim(),
         telefono: telefonoCompleto,
         unidad: unidadTexto,
-        mensaje: mensaje.value.trim()
+        mensaje: mensajeFinal
       });
 
-      // Modal de 2 pasos: "enviando sus datos" y luego "listo".
-      // Sobrescribimos el texto del paso 1 solo para este formulario (el
-      // formulario de catálogo del footer usa el mismo modal, pero sí abre
-      // el correo, así que mantiene su propio texto "Redirigiendo a su correo…").
-      var loadingTitleEl = document.querySelector('#redirectModalLoadingStep p');
-      var loadingSubEl = document.querySelector('#redirectModalLoadingStep .redirect-modal-sub');
-      if (loadingTitleEl) loadingTitleEl.textContent = hcT('lead_sending_title');
-      if (loadingSubEl) loadingSubEl.textContent = hcT('lead_sending_sub');
-      showRedirectModal();
-      setTimeout(function(){
-        showRedirectModalDone();
-        setTimeout(hideRedirectModal, 3000);
-      }, 3000);
+      if (isVetcareCatalogFlow){
+        // Descarga inmediata y automática dentro del mismo evento submit del usuario
+        vcPdfUnlocked = true;
+        vcPendingPdfDownload = false;
+        syncVcContactNotice();
+        if (typeof vcViewerCopyRefreshFn === 'function') vcViewerCopyRefreshFn();
+        triggerVetcarePdfDownload();
+        showRedirectModalDone(true);
+        redirectAutoCloseTimer = setTimeout(hideRedirectModal, 4800);
+      } else {
+        // Modal de 2 pasos: "enviando sus datos" y luego "listo".
+        var loadingTitleEl = document.querySelector('#redirectModalLoadingStep p');
+        var loadingSubEl = document.querySelector('#redirectModalLoadingStep .redirect-modal-sub');
+        if (loadingTitleEl) loadingTitleEl.textContent = hcT('lead_sending_title');
+        if (loadingSubEl) loadingSubEl.textContent = hcT('lead_sending_sub');
+        showRedirectModal();
+        redirectAutoCloseTimer = setTimeout(function(){
+          showRedirectModalDone(false);
+          redirectAutoCloseTimer = setTimeout(hideRedirectModal, 3000);
+        }, 3000);
+      }
 
       setTimeout(function(){
         if (submitBtn) submitBtn.disabled = false;
         form.reset();
+        if (form.segmento) form.segmento.classList.add('nf-placeholder');
         segmentoResetFns.forEach(function(fn){ fn(); });
       }, 1100);
     });
@@ -1340,20 +1473,52 @@ function hcT(key){
   var redirectModalOverlay = document.getElementById('redirectModalOverlay');
   var redirectModalLoadingStep = document.getElementById('redirectModalLoadingStep');
   var redirectModalDoneStep = document.getElementById('redirectModalDoneStep');
+  var redirectDoneTitleEl = redirectModalDoneStep ? redirectModalDoneStep.querySelector('p') : null;
+  var redirectDoneSubEl = redirectModalDoneStep ? redirectModalDoneStep.querySelector('.redirect-modal-sub') : null;
+  var vcRedirectManualDl = document.getElementById('vcRedirectManualDl');
+  var redirectAutoCloseTimer = null;
+
+  function clearRedirectManualDl(){
+    if (vcRedirectManualDl){
+      vcRedirectManualDl.hidden = true;
+      vcRedirectManualDl.removeAttribute('href');
+      vcRedirectManualDl.removeAttribute('download');
+    }
+    if (redirectDoneTitleEl) redirectDoneTitleEl.textContent = hcT('redirect_done_title');
+    if (redirectDoneSubEl) redirectDoneSubEl.textContent = hcT('redirect_done_sub');
+  }
+
   function showRedirectModal(){
     if (!redirectModalOverlay) return;
+    if (redirectAutoCloseTimer){ clearTimeout(redirectAutoCloseTimer); redirectAutoCloseTimer = null; }
+    clearRedirectManualDl();
     if (redirectModalLoadingStep) redirectModalLoadingStep.hidden = false;
     if (redirectModalDoneStep) redirectModalDoneStep.hidden = true;
     redirectModalOverlay.classList.add('open');
   }
-  function showRedirectModalDone(){
+  function showRedirectModalDone(isVetcareDownload){
     if (!redirectModalOverlay) return;
+    if (redirectAutoCloseTimer){ clearTimeout(redirectAutoCloseTimer); redirectAutoCloseTimer = null; }
+    if (isVetcareDownload){
+      if (redirectDoneTitleEl) redirectDoneTitleEl.textContent = hcT('vc_redirect_dl_title');
+      if (redirectDoneSubEl) redirectDoneSubEl.textContent = hcT('vc_redirect_dl_sub');
+      if (vcRedirectManualDl && VETCARE_PDF_URL){
+        vcRedirectManualDl.href = VETCARE_PDF_URL;
+        vcRedirectManualDl.setAttribute('download', 'Catalogo-Vetcare-HC-Group.pdf');
+        vcRedirectManualDl.hidden = false;
+      }
+    } else {
+      clearRedirectManualDl();
+    }
     if (redirectModalLoadingStep) redirectModalLoadingStep.hidden = true;
     if (redirectModalDoneStep) redirectModalDoneStep.hidden = false;
+    redirectModalOverlay.classList.add('open');
   }
   function hideRedirectModal(){
     if (!redirectModalOverlay) return;
+    if (redirectAutoCloseTimer){ clearTimeout(redirectAutoCloseTimer); redirectAutoCloseTimer = null; }
     redirectModalOverlay.classList.remove('open');
+    setTimeout(clearRedirectManualDl, 250);
   }
   if (redirectModalOverlay){
     redirectModalOverlay.addEventListener('click', function(e){
@@ -1412,6 +1577,182 @@ function hcT(key){
       // Si falla el guardado en la hoja, no interrumpe el flujo del mailto
     }
   }
+
+  /* ---------- MODAL: CATÁLOGO VETCARE (ancho completo + descarga desde Contacto) ---------- */
+  (function initVetcareCatalogModal(){
+    var modal = document.getElementById('vetcareCatalogModal');
+    if (!modal || !VETCARE_CATALOG_PAGES.length) return;
+
+    var closeBtn = document.getElementById('vcModalClose');
+    var headerDownloadBtn = document.getElementById('vcHeaderDownloadBtn');
+    var stage = document.getElementById('vcViewerStage');
+    var pageImg = document.getElementById('vcPageImg');
+    var prevBtn = document.getElementById('vcPrevPage');
+    var nextBtn = document.getElementById('vcNextPage');
+    var footerPrev = document.getElementById('vcFooterPrev');
+    var footerNext = document.getElementById('vcFooterNext');
+    var counterEl = document.getElementById('vcPageCounter');
+    var hintEl = document.getElementById('vcViewerGateHint');
+
+    var TOTAL_PAGES = VETCARE_CATALOG_PAGES.length;
+    var currentPage = 1;
+    var lastFocused = null;
+    var touchStartX = null;
+
+    function preloadPage(pageNum){
+      if (pageNum < 1 || pageNum > TOTAL_PAGES) return;
+      var src = VETCARE_CATALOG_PAGES[pageNum - 1];
+      if (!src) return;
+      var img = new Image();
+      img.src = src;
+    }
+
+    function updateViewerCopy(){
+      if (counterEl){
+        var tpl = hcT('vc_page_of') || 'Página {n} / {total}';
+        counterEl.textContent = tpl.replace('{n}', String(currentPage)).replace('{total}', String(TOTAL_PAGES));
+      }
+      if (pageImg){
+        var altTpl = hcT('vc_page_alt') || 'Página {n} del catálogo Vetcare';
+        pageImg.alt = altTpl.replace('{n}', String(currentPage));
+      }
+      if (hintEl){
+        hintEl.textContent = vcPdfUnlocked ? hcT('vc_viewer_hint_unlocked') : hcT('vc_viewer_hint');
+      }
+    }
+
+    function renderPage(pageNum){
+      if (pageNum < 1) pageNum = 1;
+      if (pageNum > TOTAL_PAGES) pageNum = TOTAL_PAGES;
+      currentPage = pageNum;
+
+      var src = VETCARE_CATALOG_PAGES[currentPage - 1];
+      if (pageImg && src){
+        if (pageImg.getAttribute('src') !== src){
+          if (stage) stage.classList.add('is-loading');
+          pageImg.onload = function(){
+            if (stage) stage.classList.remove('is-loading');
+          };
+          pageImg.onerror = function(){
+            if (stage) stage.classList.remove('is-loading');
+          };
+          pageImg.src = src;
+          if (pageImg.complete && stage) stage.classList.remove('is-loading');
+        }
+      }
+
+      var atStart = currentPage <= 1;
+      var atEnd = currentPage >= TOTAL_PAGES;
+      [prevBtn, footerPrev].forEach(function(b){ if (b) b.disabled = atStart; });
+      [nextBtn, footerNext].forEach(function(b){ if (b) b.disabled = atEnd; });
+
+      updateViewerCopy();
+      preloadPage(currentPage + 1);
+      preloadPage(currentPage - 1);
+    }
+
+    function openVetcareModal(triggerEl){
+      lastFocused = triggerEl || document.activeElement;
+      updateViewerCopy();
+      renderPage(currentPage);
+      modal.classList.add('open');
+      modal.setAttribute('aria-hidden', 'false');
+      document.body.style.overflow = 'hidden';
+      setTimeout(function(){
+        if (closeBtn) closeBtn.focus();
+      }, 60);
+    }
+
+    function closeVetcareModal(skipReturnFocus){
+      modal.classList.remove('open');
+      modal.setAttribute('aria-hidden', 'true');
+      document.body.style.overflow = '';
+      if (!skipReturnFocus && lastFocused && typeof lastFocused.focus === 'function'){
+        try { lastFocused.focus({ preventScroll: true }); }
+        catch(e){ lastFocused.focus(); }
+      }
+    }
+
+    if (headerDownloadBtn){
+      headerDownloadBtn.addEventListener('click', function(){
+        if (vcPdfUnlocked){
+          triggerVetcarePdfDownload();
+          return;
+        }
+        vcPendingPdfDownload = true;
+        closeVetcareModal(true);
+        selectSegmentoUnit('vetcare');
+        syncVcContactNotice();
+        if (status){
+          status.className = 'form-status';
+          status.textContent = '';
+        }
+        var targetEl = document.querySelector('#contacto .contact-section-head') || document.getElementById('leadForm') || document.getElementById('contacto');
+        if (targetEl){
+          var headerEl = document.querySelector('.site-header');
+          var clearance = headerEl ? Math.max(98, Math.ceil(headerEl.getBoundingClientRect().bottom + 16)) : 108;
+          var targetTop = Math.max(0, (window.pageYOffset || document.documentElement.scrollTop || 0) + targetEl.getBoundingClientRect().top - clearance);
+          window.scrollTo({ top: targetTop, behavior: 'smooth' });
+        }
+        setTimeout(function(){
+          var nombreInput = document.getElementById('nombre');
+          if (nombreInput && typeof nombreInput.focus === 'function'){
+            try { nombreInput.focus({ preventScroll: true }); }
+            catch(err){ nombreInput.focus(); }
+          }
+        }, 520);
+      });
+    }
+
+    [prevBtn, footerPrev].forEach(function(btn){
+      if (btn) btn.addEventListener('click', function(){ renderPage(currentPage - 1); });
+    });
+    [nextBtn, footerNext].forEach(function(btn){
+      if (btn) btn.addEventListener('click', function(){ renderPage(currentPage + 1); });
+    });
+
+    if (stage){
+      stage.addEventListener('contextmenu', function(e){ e.preventDefault(); });
+      stage.addEventListener('dragstart', function(e){ e.preventDefault(); });
+      stage.addEventListener('touchstart', function(e){
+        if (e.touches && e.touches.length === 1) touchStartX = e.touches[0].clientX;
+      }, { passive: true });
+      stage.addEventListener('touchend', function(e){
+        if (touchStartX === null || !e.changedTouches || !e.changedTouches.length) return;
+        var dx = e.changedTouches[0].clientX - touchStartX;
+        touchStartX = null;
+        if (Math.abs(dx) > 40){
+          renderPage(dx < 0 ? currentPage + 1 : currentPage - 1);
+        }
+      }, { passive: true });
+    }
+
+    if (closeBtn) closeBtn.addEventListener('click', function(){ closeVetcareModal(false); });
+    modal.addEventListener('click', function(e){
+      if (e.target === modal) closeVetcareModal(false);
+    });
+    document.addEventListener('keydown', function(e){
+      if (!modal.classList.contains('open')) return;
+      if (e.key === 'Escape'){
+        e.preventDefault();
+        closeVetcareModal(false);
+      } else if (e.key === 'ArrowLeft' && (!document.activeElement || !/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName))){
+        e.preventDefault();
+        renderPage(currentPage - 1);
+      } else if (e.key === 'ArrowRight' && (!document.activeElement || !/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName))){
+        e.preventDefault();
+        renderPage(currentPage + 1);
+      }
+    });
+
+    vcViewerCopyRefreshFn = updateViewerCopy;
+    window.openVetcareCatalogModal = openVetcareModal;
+    window.closeVetcareCatalogModal = closeVetcareModal;
+    window.refreshVetcareCatalogUI = function(){
+      updateViewerCopy();
+      syncVcContactNotice();
+    };
+  })();
 
   /* ---------- RESEÑAS EN GOOGLE SHEETS (base de datos compartida) ---------- */
   // Guarda una reseña nueva en la hoja "Reseñas" (además de mostrarla ya mismo
@@ -1530,10 +1871,10 @@ function hcT(key){
     if (catLoadingTitleEl) catLoadingTitleEl.textContent = hcT('redirect_title');
     if (catLoadingSubEl) catLoadingSubEl.textContent = hcT('redirect_sub');
     showRedirectModal();
-    setTimeout(function(){
-      showRedirectModalDone();
+    redirectAutoCloseTimer = setTimeout(function(){
+      showRedirectModalDone(false);
       window.location.href = mailtoLink;
-      setTimeout(hideRedirectModal, 3000);
+      redirectAutoCloseTimer = setTimeout(hideRedirectModal, 3000);
     }, 3000);
   }
   if (footerCatalogForm){
@@ -2617,6 +2958,10 @@ function hcT(key){
   cards.forEach(function(card){
     card.addEventListener('click', function(){
       var unit = card.getAttribute('data-unit');
+      if (unit === 'vetcare' && typeof window.openVetcareCatalogModal === 'function'){
+        window.openVetcareCatalogModal(card);
+        return;
+      }
       var sel = document.getElementById('segmento');
       if (sel && unit){
         sel.value = unit;

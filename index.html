@@ -106,7 +106,7 @@ if (window.location.hash) {
 -->
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval' https: data: blob:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https: data: blob:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: blob: https:; font-src 'self' data: https:; media-src 'self' data: blob: https:; connect-src 'self' https: wss: ws: data: blob:; frame-src 'self' https:; object-src 'none'; base-uri 'self';" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; img-src 'self' data: https://*.tile.openstreetmap.org https://cdnjs.cloudflare.com https://drive.google.com https://lh3.googleusercontent.com https://*.builderbot.cloud https://cdn.builderbot.cloud; media-src 'self' https://egwabbnmscqfqbvjxqqr.supabase.co https://*.supabase.co; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com https://cdn.builderbot.cloud https://*.builderbot.cloud; font-src 'self' https://fonts.gstatic.com data: https://cdn.builderbot.cloud https://*.builderbot.cloud; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.builderbot.cloud https://*.builderbot.cloud; connect-src 'self' https://script.google.com https://script.googleusercontent.com https://*.builderbot.cloud wss://*.builderbot.cloud; frame-src https://www.google.com https://*.builderbot.cloud; form-action 'self'; upgrade-insecure-requests" />
 <meta name="referrer" content="strict-origin-when-cross-origin" />
 <meta http-equiv="X-Content-Type-Options" content="nosniff" />
 <title>HC Group Latam</title>
@@ -298,7 +298,7 @@ if (window.location.hash) {
                 preload="auto"
                 poster="./portada-hero.png"
                 aria-label="HC Group - Video institucional">
-                <source src="./1109-web.mp4" type="video/mp4" />
+                <source src="https://egwabbnmscqfqbvjxqqr.supabase.co/storage/v1/object/public/videos%20%20hcgroup/portada%20web%20hcgoup.mp4" type="video/mp4" />
                 <img src="./portada-hero.png" alt="HC Group - Tecnología médica" class="hero-media-img" width="851" height="315" />
               </video>
               <div class="hero-video-overlay" aria-hidden="true"></div>
@@ -494,7 +494,7 @@ if (window.location.hash) {
             <div class="empresa-card-body">
               <h3 class="empresa-card-title">Vetcare</h3>
               <p class="empresa-card-desc" data-i18n="emp_vetcare_desc">Soluciones integrales en equipos médicos veterinarios.</p>
-              <span class="empresa-card-cta"><span data-i18n="emp_cta">Solicitar información</span><svg class="ic" aria-hidden="true"><use href="#ic-arrow"/></svg></span>
+              <span class="empresa-card-cta"><span data-i18n="emp_vetcare_cta">Ver catálogo</span><svg class="ic" aria-hidden="true"><use href="#ic-arrow"/></svg></span>
             </div>
           </div>
         </button>
@@ -548,62 +548,6 @@ if (window.location.hash) {
             </div>
           </div>
         </button>
-      </div>
-    </div>
-  </section>
-
-  <!-- ============ CATÁLOGO DE PRODUCTOS ============ -->
-  <!-- OJO: estas son 8 fotos reales de equipos que ya tenía el sitio (las
-       mismas del antiguo carrusel de "Unidades"). El nombre exacto del
-       modelo, el SKU y el precio de cada una son un ejemplo razonable —
-       reemplázalos por los datos reales de su inventario para que quede
-       perfecto (nombre de catálogo, código interno y precio actualizado). -->
-  <section class="section" id="catalogo">
-    <div class="container">
-      <div class="section-head">
-        <p class="eyebrow"><span class="rule"></span><span data-i18n="catalogo_badge">Catálogo de equipos</span></p>
-        <h2 data-i18n="catalogo_title">Equipos disponibles para su institución.</h2>
-        <p class="section-intro" data-i18n="catalogo_intro">Una muestra de los equipos que distribuimos. Contáctenos para conocer disponibilidad y precio actualizado de cada modelo.</p>
-      </div>
-      <div class="product-grid">
-        <article class="product-card">
-          <div class="product-photo" data-product-link="pendiente"><img src="./foto equipo 1.jpeg" alt="Sistema de ultrasonido CHISON — carro rodable"  /><button type="button" class="product-photo-zoom" data-zoom-img aria-label="Ver Sistema de ultrasonido CHISON — carro rodable en grande"><svg viewBox="0 0 24 24"><use href="#ic-search"/></svg></button></div>
-          <h3 class="product-name">Sistema de ultrasonido CHISON — carro rodable</h3>
-          <span class="product-brand">CHISON</span>
-          <span class="product-sku"><strong>SKU:</strong> CHI-US-001</span>
-          
-        </article>
-        <article class="product-card">
-          <div class="product-photo" data-product-link="pendiente"><img src="./foto equipo 2.jpeg" alt="Sistema de ultrasonido CHISON con Doppler color"  /><button type="button" class="product-photo-zoom" data-zoom-img aria-label="Ver Sistema de ultrasonido CHISON con Doppler color en grande"><svg viewBox="0 0 24 24"><use href="#ic-search"/></svg></button></div>
-          <h3 class="product-name">Sistema de ultrasonido CHISON con Doppler color</h3>
-          <span class="product-brand">CHISON</span>
-          <span class="product-sku"><strong>SKU:</strong> CHI-US-002</span>
-          
-        </article>
-        <article class="product-card">
-          <div class="product-photo" data-product-link="pendiente"><img src="./foto equipo 3.jpeg" alt="Consola de ultrasonido CHISON — uso cardiológico"  /><button type="button" class="product-photo-zoom" data-zoom-img aria-label="Ver Consola de ultrasonido CHISON — uso cardiológico en grande"><svg viewBox="0 0 24 24"><use href="#ic-search"/></svg></button></div>
-          <h3 class="product-name">Consola de ultrasonido CHISON — uso cardiológico</h3>
-          <span class="product-brand">CHISON</span>
-          <span class="product-sku"><strong>SKU:</strong> CHI-US-003</span>
-          
-        </article>
-        <article class="product-card">
-          <div class="product-photo" data-product-link="pendiente"><img src="./foto equipo 4.jpeg" alt="Sistema de ultrasonido CHISON — pantalla táctil"  /><button type="button" class="product-photo-zoom" data-zoom-img aria-label="Ver Sistema de ultrasonido CHISON — pantalla táctil en grande"><svg viewBox="0 0 24 24"><use href="#ic-search"/></svg></button></div>
-          <h3 class="product-name">Sistema de ultrasonido CHISON — pantalla táctil</h3>
-          <span class="product-brand">CHISON</span>
-          <span class="product-sku"><strong>SKU:</strong> CHI-US-004</span>
-          
-        </article>
-        <article class="product-card">
-          <div class="product-photo" data-product-link="pendiente"><img src="./foto equipo 5.jpeg" alt="Sistema de ultrasonido CHISON — carro compacto"  /><button type="button" class="product-photo-zoom" data-zoom-img aria-label="Ver Sistema de ultrasonido CHISON — carro compacto en grande"><svg viewBox="0 0 24 24"><use href="#ic-search"/></svg></button></div>
-          <h3 class="product-name">Sistema de ultrasonido CHISON — carro compacto</h3>
-          <span class="product-brand">CHISON</span>
-          <span class="product-sku"><strong>SKU:</strong> CHI-US-005</span>
-          
-        </article>
-        
-        
-        
       </div>
     </div>
   </section>
@@ -837,6 +781,7 @@ if (window.location.hash) {
 
         <p class="nf-form-title" data-i18n="form_head_title">Solicite su acceso</p>
         <p class="nf-form-subtitle" data-i18n="form_head_sub">Le respondemos en menos de 24 horas hábiles.</p>
+        <p class="vc-contact-notice" id="vcContactCatalogNotice" hidden></p>
 
         <div class="nf-field">
           <label for="nombre" data-i18n="label_name">Nombre completo</label>
@@ -939,9 +884,9 @@ if (window.location.hash) {
       <div class="footer-col">
         <h3 data-i18n="footer_services_title">Servicios</h3>
         <ul class="nav-links">
-          <li><a href="#catalogo" data-i18n="footer_link_equipos">Equipos Médicos</a></li>
-          <li><a href="#catalogo" data-i18n="footer_link_educacion">Educación Continua</a></li>
-          <li><a href="#catalogo" data-i18n="footer_link_servicios">Servicios Especializados</a></li>
+          <li><a href="#empresas" data-i18n="footer_link_equipos">Equipos Médicos</a></li>
+          <li><a href="#empresas" data-i18n="footer_link_educacion">Educación Continua</a></li>
+          <li><a href="#empresas" data-i18n="footer_link_servicios">Servicios Especializados</a></li>
         </ul>
       </div>
       <div class="divider-line"></div>
@@ -1033,6 +978,10 @@ if (window.location.hash) {
       <span class="review-modal-done-logo" aria-hidden="true"><img src="data:image/png;base64,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" alt="" /></span>
       <p data-i18n="redirect_done_title">¡Listo! Su solicitud fue enviada.</p>
       <span class="redirect-modal-sub" data-i18n="redirect_done_sub">Gracias por contactarse con HC GROUP.</span>
+      <a class="vc-redirect-dl-btn" id="vcRedirectManualDl" hidden rel="noopener">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0l-4.5-4.5M12 15l4.5-4.5"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
+        <span data-i18n="vc_btn_download_again">Descargar Catálogo Vetcare (PDF)</span>
+      </a>
     </div>
   </div>
 </div>
@@ -1098,6 +1047,62 @@ if (window.location.hash) {
       <h3 data-i18n="review_modal_done_title">¡Gracias por compartir su experiencia!</h3>
       <p data-i18n="review_modal_done_text"></p>
       <button type="button" class="btn btn-primary" id="reviewModalDoneClose" data-i18n="close">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ MODAL: CATÁLOGO VETCARE (ancho completo + descarga desde Contacto) ============ -->
+<div class="vc-modal-overlay" id="vetcareCatalogModal" role="dialog" aria-modal="true" aria-labelledby="vcModalTitle" aria-hidden="true">
+  <div class="vc-modal-card">
+    <div class="vc-modal-header">
+      <div class="vc-brand-lockup">
+        <div class="vc-brand-logo-box">
+          <img src="./logo-vetcare.png" width="364" height="300" alt="Vetcare" decoding="async" />
+        </div>
+        <div class="vc-brand-copy">
+          <h2 class="vc-modal-title" id="vcModalTitle" data-i18n="vc_modal_title">Catálogo Vetcare · Equipos Veterinarios</h2>
+          <p class="vc-modal-meta" data-i18n="vc_modal_meta">40 páginas · Ultrasonidos, Cirugía, Grooming y Equipos Básicos</p>
+        </div>
+      </div>
+      <div class="vc-header-actions">
+        <button type="button" class="vc-header-download-btn" id="vcHeaderDownloadBtn" aria-label="Descargar catálogo Vetcare en PDF" data-i18n-aria="vc_dl_aria">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0l-4.5-4.5M12 15l4.5-4.5"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
+          <span class="vc-header-download-label" data-i18n="vc_btn_download_icon">Descargar PDF</span>
+        </button>
+        <button type="button" class="vc-modal-close" id="vcModalClose" aria-label="Cerrar" data-i18n-aria="close">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#ic-close"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <div class="vc-modal-body">
+      <div class="vc-viewer-col">
+        <div class="vc-stage" id="vcViewerStage">
+          <div class="vc-stage-loader" id="vcStageLoader" aria-hidden="true">
+            <span class="redirect-spinner"></span>
+          </div>
+          <img id="vcPageImg" src="" alt="Página 1 del catálogo Vetcare" draggable="false" />
+          <button type="button" class="vc-nav-btn vc-nav-btn--prev" id="vcPrevPage" aria-label="Página anterior" data-i18n-aria="vc_prev_aria">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>
+          </button>
+          <button type="button" class="vc-nav-btn vc-nav-btn--next" id="vcNextPage" aria-label="Página siguiente" data-i18n-aria="vc_next_aria">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+          </button>
+        </div>
+
+        <div class="vc-viewer-footer">
+          <div class="vc-page-controls">
+            <button type="button" class="vc-step-btn" id="vcFooterPrev" aria-label="Página anterior" data-i18n-aria="vc_prev_aria">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>
+            </button>
+            <span class="vc-page-counter" id="vcPageCounter">Página 1 / 40</span>
+            <button type="button" class="vc-step-btn" id="vcFooterNext" aria-label="Página siguiente" data-i18n-aria="vc_next_aria">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+            </button>
+          </div>
+          <p class="vc-gate-hint" id="vcViewerGateHint" data-i18n="vc_viewer_hint">Use el ícono de descarga y envíe sus datos para obtener el PDF</p>
+        </div>
+      </div>
     </div>
   </div>
 </div>

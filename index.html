@@ -129,7 +129,7 @@ if (window.location.hash) {
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
 
 <link rel="stylesheet" href="./style.css" />
-<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js" defer></script>
 </head>
 <body>
 
@@ -195,7 +195,7 @@ if (window.location.hash) {
           <span class="lang-divider">/</span>
           <button type="button" class="lang-btn" data-lang="en">EN</button>
         </div>
-        <a href="https://www.odoo.com/es_ES/my" target="_blank" rel="noopener" class="header-btn header-btn--outline" data-portal><span data-i18n="nav_portal">Portal Clientes</span></a>
+        <a href="https://www.odoo.com/es_ES/my" target="_blank" rel="noopener" class="header-btn header-btn--outline" data-portal aria-label="Portal de Clientes"><span class="header-portal-text-full" data-i18n="nav_portal">Portal Clientes</span><span class="header-portal-text-short" data-i18n="nav_portal_short">Ingresar</span></a>
         <a href="#nosotros" class="header-btn header-btn--solid" id="headerAboutBtn"><span data-i18n="nav_nosotros">Nosotros</span></a>
         <div class="header-search-wrap" id="headerSearchWrap">
           <button type="button" class="header-icon-btn search-toggle" id="headerSearchToggle" aria-label="Buscar" aria-expanded="false" aria-controls="shopSearch"><svg viewBox="0 0 24 24"><use href="#ic-search"/></svg></button>
@@ -217,6 +217,18 @@ if (window.location.hash) {
     <!-- Panel deslizante contenido dentro del ancho del header -->
     <div class="mobile-drawer-slot" id="mobileMenuSlot">
       <aside class="mobile-drawer" id="mobileMenuDrawer" role="dialog" aria-modal="true" aria-label="Navegación principal" data-i18n-aria="menu_nav_label" aria-hidden="true">
+        <div class="mobile-drawer-portal-top">
+          <a href="https://www.odoo.com/es_ES/my" target="_blank" rel="noopener" class="mobile-drawer-portal-card" data-portal>
+            <div class="portal-card-icon-wrap" aria-hidden="true">
+              <svg class="ic" viewBox="0 0 24 24"><use href="#ic-user"/></svg>
+            </div>
+            <div class="portal-card-info">
+              <strong data-i18n="portal_login_title">Portal de Clientes</strong>
+              <span data-i18n="portal_login_sub">Ingresar a mi cuenta</span>
+            </div>
+            <svg class="mobile-nav-arrow" viewBox="0 0 24 24" aria-hidden="true"><use href="#ic-arrow"/></svg>
+          </a>
+        </div>
         <nav class="mobile-nav" aria-label="Navegación principal" data-i18n-aria="menu_nav_label">
           <ul class="mobile-nav-list">
             <li>
@@ -295,7 +307,7 @@ if (window.location.hash) {
                 muted
                 playsinline
                 webkit-playsinline
-                preload="auto"
+                preload="metadata"
                 poster="./portada-hero.png"
                 aria-label="HC Group - Video institucional">
                 <source src="https://egwabbnmscqfqbvjxqqr.supabase.co/storage/v1/object/public/videos%20%20hcgroup/portada%20web%20hcgoup.mp4" type="video/mp4" />
@@ -1110,6 +1122,7 @@ if (window.location.hash) {
 <script type="module" src="./script.js"></script>
 
 <script
+  defer
   src="https://cdn.builderbot.cloud/sdk.umd.js"
   data-builderbot-chat
   data-id="17e73d0a-c913-4073-8513-9a3c2bc4ef72"

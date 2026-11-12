@@ -4,12 +4,37 @@
    de lógica, solo movido a un archivo aparte)
    ============================================================ */
 
-/* ---------- ASSETS CATÁLOGO VETCARE (resolución estática Vite) ---------- */
-var VETCARE_CATALOG_MODULES = import.meta.glob('./src/assets/vetcare-catalog/*.webp', { eager: true, query: '?url', import: 'default' });
+/* ---------- ASSETS CATÁLOGO VETCARE (resolución estática Vite con fallback) ---------- */
+var VETCARE_CATALOG_MODULES = {};
+try {
+  if (typeof import.meta !== 'undefined' && typeof import.meta.glob === 'function') {
+    VETCARE_CATALOG_MODULES = import.meta.glob('./src/assets/vetcare-catalog/*.webp', { eager: true, query: '?url', import: 'default' });
+  }
+} catch (e) {}
+
 var VETCARE_CATALOG_PAGES = Object.keys(VETCARE_CATALOG_MODULES)
   .sort()
   .map(function(key){ return VETCARE_CATALOG_MODULES[key]; });
-var VETCARE_PDF_URL = new URL('./catalogo-vetcare.pdf', import.meta.url).href;
+
+if (!VETCARE_CATALOG_PAGES.length) {
+  for (var p = 1; p <= 40; p++) {
+    var pNum = (p < 10 ? '0' : '') + p;
+    try {
+      VETCARE_CATALOG_PAGES.push(new URL('./src/assets/vetcare-catalog/p_' + pNum + '.webp', import.meta.url).href);
+    } catch(e) {
+      VETCARE_CATALOG_PAGES.push('./src/assets/vetcare-catalog/p_' + pNum + '.webp');
+    }
+  }
+}
+
+var VETCARE_PDF_URL = (function(){
+  try {
+    return new URL('./catalogo-vetcare.pdf', import.meta.url).href;
+  } catch(e) {
+    return './catalogo-vetcare.pdf';
+  }
+})();
+
 
 /* ---------- 0. CONTROL DE INICIO DESDE ARRIBA (SCROLL TO TOP GARANTIZADO) ---------- */
 if ('scrollRestoration' in history) {

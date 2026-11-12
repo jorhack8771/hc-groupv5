@@ -169,7 +169,7 @@ window.HC_I18N = {
     catalogo_precio_consultar: "Precio a consultar",
     catalogo_agotado: "AGOTADO",
     marcas_badge: "Nuestras marcas",
-    reviews_badge: "Opiniones verificadas",
+    reviews_badge: "Opiniones verificadas testimonio clientes",
     review_write: "Escriba una reseña",
     review_filter_aria: "Mostrar u ocultar reseñas",
     review_name_label: "Su nombre",
@@ -205,9 +205,9 @@ window.HC_I18N = {
     role_marketing_diseno: "Marketing y Diseño",
     role_generales: "Servicios Generales",
     contact_badge: "Visítenos",
-    contact_title: '<span class="contact-title-black-fx">Encuéntrenos en Managua</span>',
+    contact_title: '<span class="contact-title-black-fx">Oficina central</span>',
     map_link: "Ver ubicación exacta en Google Maps",
-    form_head_title: "Solicite información",
+    form_head_title: "Servicio requerido",
     form_head_sub: "Le respondemos en menos de 24 horas hábiles.",
     label_name: "Nombre completo",
     label_email: "Correo electrónico",
@@ -362,7 +362,7 @@ window.HC_I18N = {
     catalogo_precio_consultar: "Price on request",
     catalogo_agotado: "SOLD OUT",
     marcas_badge: "Our brands",
-    reviews_badge: "Verified reviews",
+    reviews_badge: "Verified client testimonials",
     review_write: "Write a review",
     review_filter_aria: "Show or hide reviews",
     review_name_label: "Your name",
@@ -398,9 +398,9 @@ window.HC_I18N = {
     role_marketing_diseno: "Marketing & Design",
     role_generales: "General Services",
     contact_badge: "Visit us",
-    contact_title: '<span class="contact-title-black-fx">Find us in Managua</span>',
+    contact_title: '<span class="contact-title-black-fx">Headquarters</span>',
     map_link: "See exact location on Google Maps",
-    form_head_title: "Request information",
+    form_head_title: "Required service",
     form_head_sub: "We reply within 24 business hours.",
     label_name: "Full name",
     label_email: "Email address",
@@ -1667,9 +1667,64 @@ function hcT(key){
     var lastFocused = null;
     var touchStartX = null;
 
+    var knownWorkingPrefix = null;
+
+    function getCandidatePageUrls(pageNum){
+      var pNum = (pageNum < 10 ? '0' : '') + pageNum;
+      var candidates = [];
+      if (knownWorkingPrefix){
+        candidates.push(knownWorkingPrefix + 'p_' + pNum + '.webp');
+      }
+      var primary = VETCARE_CATALOG_PAGES[pageNum - 1];
+      if (primary) candidates.push(primary);
+      candidates.push('./vetcare-catalog/p_' + pNum + '.webp');
+      candidates.push('./src/assets/vetcare-catalog/p_' + pNum + '.webp');
+      candidates.push('./public/vetcare-catalog/p_' + pNum + '.webp');
+      candidates.push('vetcare-catalog/p_' + pNum + '.webp');
+      try {
+        candidates.push(new URL('./vetcare-catalog/p_' + pNum + '.webp', import.meta.url).href);
+      } catch(e){}
+      try {
+        candidates.push(new URL('./src/assets/vetcare-catalog/p_' + pNum + '.webp', import.meta.url).href);
+      } catch(e){}
+      return candidates.filter(function(item, idx, arr){
+        return item && arr.indexOf(item) === idx;
+      });
+    }
+
+    function removePdfFallback(){
+      var oldFb = stage ? stage.querySelector('.vc-pdf-fallback') : null;
+      if (oldFb && oldFb.parentNode) oldFb.parentNode.removeChild(oldFb);
+      if (pageImg) pageImg.style.display = 'block';
+    }
+
+    function showPdfFallback(pageNum){
+      if (!stage) return;
+      if (stage.querySelector('.vc-pdf-fallback')) return;
+      if (pageImg) pageImg.style.display = 'none';
+      var pdfUrl = VETCARE_PDF_URL || './catalogo-vetcare.pdf';
+      var fb = document.createElement('div');
+      fb.className = 'vc-pdf-fallback';
+      fb.style.cssText = 'width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#0E2317;color:#fff;padding:20px;text-align:center;box-sizing:border-box;z-index:3;position:relative;';
+      fb.innerHTML = '<iframe src="' + pdfUrl + '#page=' + pageNum + '" style="width:100%;height:100%;flex:1 1 auto;border:none;border-radius:6px;background:#fff;min-height:320px;" title="Catálogo Vetcare PDF"></iframe>' +
+        '<div style="margin-top:12px;display:flex;gap:12px;align-items:center;justify-content:center;flex-wrap:wrap;">' +
+        '<a href="' + pdfUrl + '" target="_blank" rel="noopener noreferrer" style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;background:#94C11E;color:#0E2317;font-weight:700;border-radius:6px;text-decoration:none;font-size:0.9rem;">Abrir PDF en pestaña nueva</a>' +
+        '<button type="button" id="vcFallbackDlBtn" style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;background:rgba(255,255,255,0.15);color:#fff;font-weight:600;border-radius:6px;border:1px solid rgba(255,255,255,0.3);cursor:pointer;font-size:0.9rem;">Descargar PDF</button>' +
+        '</div>';
+      stage.appendChild(fb);
+      var fbDlBtn = fb.querySelector('#vcFallbackDlBtn');
+      if (fbDlBtn) {
+        fbDlBtn.addEventListener('click', function(){
+          if (headerDownloadBtn) headerDownloadBtn.click();
+          else triggerVetcarePdfDownload();
+        });
+      }
+    }
+
     function preloadPage(pageNum){
       if (pageNum < 1 || pageNum > TOTAL_PAGES) return;
-      var src = VETCARE_CATALOG_PAGES[pageNum - 1];
+      var candidates = getCandidatePageUrls(pageNum);
+      var src = candidates[0];
       if (!src) return;
       var img = new Image();
       img.src = src;
@@ -1694,20 +1749,39 @@ function hcT(key){
       if (pageNum > TOTAL_PAGES) pageNum = TOTAL_PAGES;
       currentPage = pageNum;
 
-      var src = VETCARE_CATALOG_PAGES[currentPage - 1];
-      if (pageImg && src){
-        if (pageImg.getAttribute('src') !== src){
-          if (stage) stage.classList.add('is-loading');
-          pageImg.onload = function(){
-            if (stage) stage.classList.remove('is-loading');
-          };
-          pageImg.onerror = function(){
-            if (stage) stage.classList.remove('is-loading');
-          };
-          pageImg.src = src;
-          if (pageImg.complete && stage) stage.classList.remove('is-loading');
+      var candidates = getCandidatePageUrls(currentPage);
+      if (stage) stage.classList.add('is-loading');
+
+      function tryCandidate(idx){
+        if (idx >= candidates.length){
+          // Ninguna imagen funcionó; mostramos el visor integrado de PDF
+          if (stage) stage.classList.remove('is-loading');
+          showPdfFallback(currentPage);
+          return;
         }
+        var targetSrc = candidates[idx];
+        var testImg = new Image();
+        testImg.onload = function(){
+          if (currentPage !== pageNum) return;
+          removePdfFallback();
+          if (stage) stage.classList.remove('is-loading');
+          if (pageImg){
+            pageImg.src = targetSrc;
+            pageImg.style.display = 'block';
+          }
+          var pNum = (pageNum < 10 ? '0' : '') + pageNum;
+          var pIdx = targetSrc.indexOf('p_' + pNum + '.webp');
+          if (pIdx !== -1){
+            knownWorkingPrefix = targetSrc.substring(0, pIdx);
+          }
+        };
+        testImg.onerror = function(){
+          tryCandidate(idx + 1);
+        };
+        testImg.src = targetSrc;
       }
+
+      tryCandidate(0);
 
       var atStart = currentPage <= 1;
       var atEnd = currentPage >= TOTAL_PAGES;
@@ -1732,6 +1806,7 @@ function hcT(key){
     }
 
     function closeVetcareModal(skipReturnFocus){
+      removePdfFallback();
       modal.classList.remove('open');
       modal.setAttribute('aria-hidden', 'true');
       document.body.style.overflow = '';

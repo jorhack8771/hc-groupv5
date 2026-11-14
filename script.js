@@ -29,9 +29,56 @@ if (!VETCARE_CATALOG_PAGES.length) {
 
 var VETCARE_PDF_URL = (function(){
   try {
-    return new URL('./catalogo-vetcare.pdf', import.meta.url).href;
+    return new URL('./pdf/catalogo-vetcare.pdf', import.meta.url).href;
   } catch(e) {
-    return './catalogo-vetcare.pdf';
+    return './pdf/catalogo-vetcare.pdf';
+  }
+})();
+
+/* ---------- ASSETS CATÁLOGO MEDICODONT (resolución estática Vite con fallback) ---------- */
+var MEDICODONT_CATALOG_MODULES = {};
+try {
+  if (typeof import.meta !== 'undefined' && typeof import.meta.glob === 'function') {
+    MEDICODONT_CATALOG_MODULES = import.meta.glob('./src/assets/medicodont-catalog/*.webp', { eager: true, query: '?url', import: 'default' });
+  }
+} catch (e) {}
+
+var MEDICODONT_CATALOG_PAGES = Object.keys(MEDICODONT_CATALOG_MODULES)
+  .sort()
+  .map(function(key){ return MEDICODONT_CATALOG_MODULES[key]; });
+
+if (!MEDICODONT_CATALOG_PAGES.length) {
+  for (var mp = 1; mp <= 26; mp++) {
+    var mpNum = (mp < 10 ? '0' : '') + mp;
+    try {
+      MEDICODONT_CATALOG_PAGES.push(new URL('./src/assets/medicodont-catalog/p_' + mpNum + '.webp', import.meta.url).href);
+    } catch(e) {
+      MEDICODONT_CATALOG_PAGES.push('./src/assets/medicodont-catalog/p_' + mpNum + '.webp');
+    }
+  }
+}
+
+var MEDICODONT_PDF_URL = (function(){
+  try {
+    return new URL('./pdf/catalogo-medicodont.pdf', import.meta.url).href;
+  } catch(e) {
+    return './pdf/catalogo-medicodont.pdf';
+  }
+})();
+
+var VETCARE_LOGO_URL = (function(){
+  try {
+    return new URL('./imagenes/logo-vetcare.png', import.meta.url).href;
+  } catch(e) {
+    return './imagenes/logo-vetcare.png';
+  }
+})();
+
+var MEDICODONT_LOGO_URL = (function(){
+  try {
+    return new URL('./imagenes/logo-medicodont.png', import.meta.url).href;
+  } catch(e) {
+    return './imagenes/logo-medicodont.png';
   }
 })();
 
@@ -95,6 +142,9 @@ window.HC_I18N = {
     pop_success_title: "¡Listo!",
     pop_success_sub: "Te mantendremos al tanto de nuestras novedades.",
     empresas_title_html: '<span class="empresas-title-accent">Empresas</span> que integran<br>nuestro grupo',
+    aliados_eyebrow: "Alianzas estratégicas",
+    aliados_title_html: 'Aliados <span class="aliados-title-accent">nuestros</span>',
+    aliados_intro: "Nuestras alianzas con instituciones académicas y fabricantes de reconocimiento mundial nos permiten impulsar formación continua, tecnología de vanguardia y soluciones adaptadas a cada necesidad.",
     emp_medicodont_desc: "Suministramos equipos médicos y servicios de vanguardia para mejorar la salud humana.",
     emp_vetcare_desc: "Soluciones integrales en equipos médicos veterinarios.",
     emp_docens_desc: "Es la plataforma de formación que impulsa a profesionales de la salud.",
@@ -104,6 +154,7 @@ window.HC_I18N = {
     emp_servicio_mark_bot: "TÉCNICO",
     emp_cta: "Solicitar información",
     emp_vetcare_cta: "Ver catálogo",
+    emp_medicodont_cta: "Ver catálogo",
     vc_modal_title: "Catálogo Vetcare · Equipos Veterinarios",
     vc_modal_meta: "40 páginas · Ultrasonidos, Cirugía, Grooming y Equipos Básicos",
     vc_prev_aria: "Página anterior",
@@ -120,6 +171,13 @@ window.HC_I18N = {
     vc_redirect_dl_title: "¡Datos enviados! Descargando catálogo…",
     vc_redirect_dl_sub: "La descarga del Catálogo Vetcare comenzó automáticamente. Nuestro equipo le contactará pronto.",
     vc_btn_download_again: "Descargar Catálogo Vetcare (PDF)",
+    mc_modal_title: "Catálogo Medicodont · Equipos Médicos",
+    mc_modal_meta: "26 páginas · Ultrasonografía, Radiología, Medicina Interna y Ginecología",
+    mc_dl_aria: "Descargar catálogo Medicodont en PDF",
+    mc_page_alt: "Página {n} del catálogo Medicodont",
+    mc_contact_notice: "Catálogo Medicodont seleccionado: complete su nombre, correo y teléfono/WhatsApp y presione Enviar solicitud para iniciar la descarga automática del PDF.",
+    mc_redirect_dl_sub: "La descarga del Catálogo Medicodont comenzó automáticamente. Nuestro equipo le contactará pronto.",
+    mc_btn_download_again: "Descargar Catálogo Medicodont (PDF)",
     announce_html: '¡Conozca nuestra <a href="#boletin" class="announce-link"><strong>nueva línea</strong></a> de equipos y soluciones para el sector salud! \u{1FA7A}',
     badge_novedad: "Boletín informativo",
     search_placeholder: "Buscar",
@@ -288,6 +346,9 @@ window.HC_I18N = {
     pop_success_title: "All set!",
     pop_success_sub: "We will keep you updated with our latest news.",
     empresas_title_html: '<span class="empresas-title-accent">Companies</span> within<br>our group',
+    aliados_eyebrow: "Strategic alliances",
+    aliados_title_html: 'Our <span class="aliados-title-accent">allies</span>',
+    aliados_intro: "Our partnerships with prestigious academic institutions and world-renowned manufacturers enable us to deliver continuing education, cutting-edge technology, and tailored solutions.",
     emp_medicodont_desc: "We supply cutting-edge medical equipment and services to advance human healthcare.",
     emp_vetcare_desc: "Comprehensive solutions in veterinary medical equipment.",
     emp_docens_desc: "The continuing education platform empowering healthcare professionals.",
@@ -297,6 +358,7 @@ window.HC_I18N = {
     emp_servicio_mark_bot: "SERVICE",
     emp_cta: "Request information",
     emp_vetcare_cta: "View catalog",
+    emp_medicodont_cta: "View catalog",
     vc_modal_title: "Vetcare Catalog · Veterinary Equipment",
     vc_modal_meta: "40 pages · Ultrasound, Surgery, Grooming & Basic Equipment",
     vc_prev_aria: "Previous page",
@@ -313,6 +375,13 @@ window.HC_I18N = {
     vc_redirect_dl_title: "Details sent! Downloading catalog…",
     vc_redirect_dl_sub: "Your Vetcare Catalog download started automatically. Our team will reach out shortly.",
     vc_btn_download_again: "Download Vetcare Catalog (PDF)",
+    mc_modal_title: "Medicodont Catalog · Medical Equipment",
+    mc_modal_meta: "26 pages · Ultrasound, Radiology, Internal Medicine & Gynecology",
+    mc_dl_aria: "Download Medicodont catalog PDF",
+    mc_page_alt: "Medicodont catalog page {n}",
+    mc_contact_notice: "Medicodont Catalog selected: complete your name, email & phone/WhatsApp and click Send request to start the automatic PDF download.",
+    mc_redirect_dl_sub: "Your Medicodont Catalog download started automatically. Our team will reach out shortly.",
+    mc_btn_download_again: "Download Medicodont Catalog (PDF)",
     announce_html: 'Check out our <a href="#boletin" class="announce-link"><strong>new line</strong></a> of equipment and solutions for the health sector! \u{1FA7A}',
     badge_novedad: "Newsletter",
     search_placeholder: "Search",
@@ -493,25 +562,25 @@ function hcT(key){
       var cards = [];
 
             var initialTeamData = [
-        { image: new URL("./1.png", import.meta.url).href, name: "Ing. Bayron Andero", role: "Gerente Comercial" },
-        { image: new URL("./2.png", import.meta.url).href, name: "Ing. Willie Cuadra", role: "Asesor Comercial" },
-        { image: new URL("./3.png", import.meta.url).href, name: "Ing. Joshua Sevilla", role: "Asistente de electromedicina" },
-        { image: new URL("./4.png", import.meta.url).href, name: "Ing. Joel Nuñez", role: "Responsable de Adquisiciones" },
-        { image: new URL("./5.png", import.meta.url).href, name: "Lic. Jeriel Gutiérrez", role: "Asesor Comercial" },
-        { image: new URL("./6.png", import.meta.url).href, name: "Lic. Cristhell Almanza", role: "Asistente administrativo y recepción" },
-        { image: new URL("./7.png", import.meta.url).href, name: "Lic. Ashly Vivas", role: "Diseñadora Gráfica" },
-        { image: new URL("./8.png", import.meta.url).href, name: "Lic. Ashley Jiron", role: "Gestión del Bienestar Humano" },
-        { image: new URL("./9.png", import.meta.url).href, name: "Lic. Jared Manzanares", role: "Marketing y Diseño" },
-        { image: new URL("./10.png", import.meta.url).href, name: "Amelia Gonzales", role: "Servicios Generales" },
-        { image: new URL("./11.png", import.meta.url).href, name: "Lic. Luis Zamora", role: "Auxiliar de Operaciones y Bodega" },
-        { image: new URL("./12.png", import.meta.url).href, name: "Lic. Christopher Torres", role: "Responsable de Operaciones y Bodega" },
-        { image: new URL("./13.png", import.meta.url).href, name: "Lic. Jennifer Obando", role: "Gerente Administrativo" },
-        { image: new URL("./14.png", import.meta.url).href, name: "Ing. Kevin Rivas J.", role: "Asistente de electromedicina" },
-        { image: new URL("./15.png", import.meta.url).href, name: "Ing. Rodolfo Salinas", role: "Asistente de electromedicina" },
-        { image: new URL("./16.png", import.meta.url).href, name: "Ing. Natividad Picado R.", role: "Ingeniero Supervisor/Campo" },
-        { image: new URL("./17.png", import.meta.url).href, name: "Dr. Wilber Matamoro", role: "CEO HC Group" },
-        { image: new URL("./18.png", import.meta.url).href, name: "Lic. Ana Moya", role: "Recursos Humanos" },
-        { image: new URL("./19.png", import.meta.url).href, name: "Dra. Grethel Olivas", role: "Asesora Aplicacionista" }
+        { image: new URL("./imagenes/1.png", import.meta.url).href, name: "Ing. Bayron Andero", role: "Gerente Comercial" },
+        { image: new URL("./imagenes/2.png", import.meta.url).href, name: "Ing. Willie Cuadra", role: "Asesor Comercial" },
+        { image: new URL("./imagenes/3.png", import.meta.url).href, name: "Ing. Joshua Sevilla", role: "Asistente de electromedicina" },
+        { image: new URL("./imagenes/4.png", import.meta.url).href, name: "Ing. Joel Nuñez", role: "Responsable de Adquisiciones" },
+        { image: new URL("./imagenes/5.png", import.meta.url).href, name: "Lic. Jeriel Gutiérrez", role: "Asesor Comercial" },
+        { image: new URL("./imagenes/6.png", import.meta.url).href, name: "Lic. Cristhell Almanza", role: "Asistente administrativo y recepción" },
+        { image: new URL("./imagenes/7.png", import.meta.url).href, name: "Lic. Ashly Vivas", role: "Diseñadora Gráfica" },
+        { image: new URL("./imagenes/8.png", import.meta.url).href, name: "Lic. Ashley Jiron", role: "Gestión del Bienestar Humano" },
+        { image: new URL("./imagenes/9.png", import.meta.url).href, name: "Lic. Jared Manzanares", role: "Marketing y Diseño" },
+        { image: new URL("./imagenes/10.png", import.meta.url).href, name: "Amelia Gonzales", role: "Servicios Generales" },
+        { image: new URL("./imagenes/11.png", import.meta.url).href, name: "Lic. Luis Zamora", role: "Auxiliar de Operaciones y Bodega" },
+        { image: new URL("./imagenes/12.png", import.meta.url).href, name: "Lic. Christopher Torres", role: "Responsable de Operaciones y Bodega" },
+        { image: new URL("./imagenes/13.png", import.meta.url).href, name: "Lic. Jennifer Obando", role: "Gerente Administrativo" },
+        { image: new URL("./imagenes/14.png", import.meta.url).href, name: "Ing. Kevin Rivas J.", role: "Asistente de electromedicina" },
+        { image: new URL("./imagenes/15.png", import.meta.url).href, name: "Ing. Rodolfo Salinas", role: "Asistente de electromedicina" },
+        { image: new URL("./imagenes/16.png", import.meta.url).href, name: "Ing. Natividad Picado R.", role: "Ingeniero Supervisor/Campo" },
+        { image: new URL("./imagenes/17.png", import.meta.url).href, name: "Dr. Wilber Matamoro", role: "CEO HC Group" },
+        { image: new URL("./imagenes/18.png", import.meta.url).href, name: "Lic. Ana Moya", role: "Recursos Humanos" },
+        { image: new URL("./imagenes/19.png", import.meta.url).href, name: "Dra. Grethel Olivas", role: "Asesora Aplicacionista" }
       ];
 
       // Eliminar duplicados en base al nombre y rol
@@ -1365,33 +1434,81 @@ function hcT(key){
     });
   }
 
-  var vcPendingPdfDownload = false;
-  var vcPdfUnlocked = false;
+  var CATALOG_CONFIGS = {
+    vetcare: {
+      unitValue: 'vetcare',
+      folder: 'vetcare-catalog',
+      pages: VETCARE_CATALOG_PAGES,
+      pdfUrl: VETCARE_PDF_URL,
+      fallbackPdfPath: './pdf/catalogo-vetcare.pdf',
+      downloadName: 'Catalogo-Vetcare-HC-Group.pdf',
+      logoUrl: VETCARE_LOGO_URL,
+      brandName: 'Vetcare',
+      modalTitleKey: 'vc_modal_title',
+      modalMetaKey: 'vc_modal_meta',
+      dlAriaKey: 'vc_dl_aria',
+      pageAltKey: 'vc_page_alt',
+      contactNoticeKey: 'vc_contact_notice',
+      redirectSubKey: 'vc_redirect_dl_sub',
+      btnDownloadAgainKey: 'vc_btn_download_again',
+      sheetUnitText: 'Vetcare — veterinaria (Catálogo PDF)',
+      sheetMessage: 'Solicitud de descarga del Catálogo Vetcare PDF'
+    },
+    medicodont: {
+      unitValue: 'medicodont',
+      folder: 'medicodont-catalog',
+      pages: MEDICODONT_CATALOG_PAGES,
+      pdfUrl: MEDICODONT_PDF_URL,
+      fallbackPdfPath: './pdf/catalogo-medicodont.pdf',
+      downloadName: 'Catalogo-Medicodont-HC-Group.pdf',
+      logoUrl: MEDICODONT_LOGO_URL,
+      brandName: 'Medicodont',
+      modalTitleKey: 'mc_modal_title',
+      modalMetaKey: 'mc_modal_meta',
+      dlAriaKey: 'mc_dl_aria',
+      pageAltKey: 'mc_page_alt',
+      contactNoticeKey: 'mc_contact_notice',
+      redirectSubKey: 'mc_redirect_dl_sub',
+      btnDownloadAgainKey: 'mc_btn_download_again',
+      sheetUnitText: 'Medicodont — equipos médicos (Catálogo PDF)',
+      sheetMessage: 'Solicitud de descarga del Catálogo Medicodont PDF'
+    }
+  };
+
+  var pendingPdfCatalog = null;
+  var unlockedCatalogs = { vetcare: false, medicodont: false };
   var vcContactNoticeEl = document.getElementById('vcContactCatalogNotice');
   var vcViewerCopyRefreshFn = null;
 
   function syncVcContactNotice(){
     if (!vcContactNoticeEl) return;
-    if (vcPendingPdfDownload){
-      vcContactNoticeEl.textContent = hcT('vc_contact_notice');
+    var cfg = pendingPdfCatalog ? CATALOG_CONFIGS[pendingPdfCatalog] : null;
+    if (cfg){
+      vcContactNoticeEl.textContent = hcT(cfg.contactNoticeKey);
+      vcContactNoticeEl.classList.toggle('is-medicodont', pendingPdfCatalog === 'medicodont');
       vcContactNoticeEl.hidden = false;
     } else {
       vcContactNoticeEl.hidden = true;
+      vcContactNoticeEl.classList.remove('is-medicodont');
       vcContactNoticeEl.textContent = '';
     }
   }
 
-  function triggerVetcarePdfDownload(){
-    if (!VETCARE_PDF_URL) return;
+  function triggerCatalogPdfDownload(catalogKey){
+    var cfg = CATALOG_CONFIGS[catalogKey || 'vetcare'];
+    if (!cfg || !cfg.pdfUrl) return;
     var a = document.createElement('a');
-    a.href = VETCARE_PDF_URL;
-    a.download = 'Catalogo-Vetcare-HC-Group.pdf';
+    a.href = cfg.pdfUrl;
+    a.download = cfg.downloadName;
     a.style.display = 'none';
     document.body.appendChild(a);
     a.click();
     setTimeout(function(){
       if (a.parentNode) a.parentNode.removeChild(a);
     }, 150);
+  }
+  function triggerVetcarePdfDownload(){
+    triggerCatalogPdfDownload('vetcare');
   }
 
   var form = document.getElementById('leadForm');
@@ -1424,8 +1541,8 @@ function hcT(key){
   if (form){
     if (form.segmento){
       form.segmento.addEventListener('change', function(){
-        if (form.segmento.value !== 'vetcare' && vcPendingPdfDownload){
-          vcPendingPdfDownload = false;
+        if (pendingPdfCatalog && form.segmento.value !== pendingPdfCatalog){
+          pendingPdfCatalog = null;
           syncVcContactNotice();
         }
       });
@@ -1441,9 +1558,12 @@ function hcT(key){
       var segmentoTriggerEl = document.getElementById('segmentoTrigger');
       if (segmentoTriggerEl) segmentoTriggerEl.classList.remove('invalid');
 
-      var isVetcareCatalogFlow = Boolean(vcPendingPdfDownload && segmento.value === 'vetcare');
+      var catalogDownloadKey = (pendingPdfCatalog && segmento.value === pendingPdfCatalog && CATALOG_CONFIGS[pendingPdfCatalog])
+        ? pendingPdfCatalog
+        : null;
+      var isCatalogDownloadFlow = Boolean(catalogDownloadKey);
       var ok = true;
-      if (!nombre.value.trim() || (isVetcareCatalogFlow && nombre.value.trim().length < 2)){
+      if (!nombre.value.trim() || (isCatalogDownloadFlow && nombre.value.trim().length < 2)){
         nombre.classList.add('invalid');
         ok = false;
       }
@@ -1456,7 +1576,7 @@ function hcT(key){
         if (segmentoTriggerEl) segmentoTriggerEl.classList.add('invalid');
         ok = false;
       }
-      if (isVetcareCatalogFlow){
+      if (isCatalogDownloadFlow){
         var telDigits = telefono && telefono.value ? telefono.value.replace(/\D/g, '') : '';
         if (telDigits.length < 6){
           if (telefono) telefono.classList.add('invalid');
@@ -1466,7 +1586,7 @@ function hcT(key){
 
       if (!ok){
         status.className = 'form-status error';
-        if (isVetcareCatalogFlow){
+        if (isCatalogDownloadFlow){
           var onlyPhoneBad = !nombre.classList.contains('invalid') && !email.classList.contains('invalid') && !segmento.classList.contains('invalid') && telefono && telefono.classList.contains('invalid');
           status.textContent = onlyPhoneBad ? hcT('vc_err_phone') : hcT('vc_err_fields');
         } else {
@@ -1475,11 +1595,12 @@ function hcT(key){
         return;
       }
       var prefijo = form.prefijo, mensaje = form.mensaje;
-      var unidadTexto = isVetcareCatalogFlow
-        ? 'Vetcare — veterinaria (Catálogo PDF)'
+      var activeCfg = isCatalogDownloadFlow ? CATALOG_CONFIGS[catalogDownloadKey] : null;
+      var unidadTexto = activeCfg
+        ? activeCfg.sheetUnitText
         : segmento.options[segmento.selectedIndex].text;
       var telefonoCompleto = telefono.value.trim() ? (prefijo.value + ' ' + telefono.value.trim()) : hcT('mail_no_phone');
-      var mensajeFinal = mensaje.value.trim() || (isVetcareCatalogFlow ? 'Solicitud de descarga del Catálogo Vetcare PDF' : '');
+      var mensajeFinal = mensaje.value.trim() || (activeCfg ? activeCfg.sheetMessage : '');
 
       var submitBtn = form.querySelector('button[type="submit"]');
       if (submitBtn) submitBtn.disabled = true;
@@ -1493,14 +1614,14 @@ function hcT(key){
         mensaje: mensajeFinal
       });
 
-      if (isVetcareCatalogFlow){
+      if (isCatalogDownloadFlow){
         // Descarga inmediata y automática dentro del mismo evento submit del usuario
-        vcPdfUnlocked = true;
-        vcPendingPdfDownload = false;
+        unlockedCatalogs[catalogDownloadKey] = true;
+        pendingPdfCatalog = null;
         syncVcContactNotice();
         if (typeof vcViewerCopyRefreshFn === 'function') vcViewerCopyRefreshFn();
-        triggerVetcarePdfDownload();
-        showRedirectModalDone(true);
+        triggerCatalogPdfDownload(catalogDownloadKey);
+        showRedirectModalDone(catalogDownloadKey);
         redirectAutoCloseTimer = setTimeout(hideRedirectModal, 4800);
       } else {
         // Modal de 2 pasos: "enviando sus datos" y luego "listo".
@@ -1549,8 +1670,11 @@ function hcT(key){
   function clearRedirectManualDl(){
     if (vcRedirectManualDl){
       vcRedirectManualDl.hidden = true;
+      vcRedirectManualDl.classList.remove('is-medicodont');
       vcRedirectManualDl.removeAttribute('href');
       vcRedirectManualDl.removeAttribute('download');
+      var manualSpan = vcRedirectManualDl.querySelector('span');
+      if (manualSpan) manualSpan.textContent = hcT('vc_btn_download_again');
     }
     if (redirectDoneTitleEl) redirectDoneTitleEl.textContent = hcT('redirect_done_title');
     if (redirectDoneSubEl) redirectDoneSubEl.textContent = hcT('redirect_done_sub');
@@ -1564,15 +1688,20 @@ function hcT(key){
     if (redirectModalDoneStep) redirectModalDoneStep.hidden = true;
     redirectModalOverlay.classList.add('open');
   }
-  function showRedirectModalDone(isVetcareDownload){
+  function showRedirectModalDone(catalogDownloadParam){
     if (!redirectModalOverlay) return;
     if (redirectAutoCloseTimer){ clearTimeout(redirectAutoCloseTimer); redirectAutoCloseTimer = null; }
-    if (isVetcareDownload){
+    var dlKey = catalogDownloadParam === true ? 'vetcare' : (typeof catalogDownloadParam === 'string' && CATALOG_CONFIGS[catalogDownloadParam] ? catalogDownloadParam : null);
+    var cfg = dlKey ? CATALOG_CONFIGS[dlKey] : null;
+    if (cfg){
       if (redirectDoneTitleEl) redirectDoneTitleEl.textContent = hcT('vc_redirect_dl_title');
-      if (redirectDoneSubEl) redirectDoneSubEl.textContent = hcT('vc_redirect_dl_sub');
-      if (vcRedirectManualDl && VETCARE_PDF_URL){
-        vcRedirectManualDl.href = VETCARE_PDF_URL;
-        vcRedirectManualDl.setAttribute('download', 'Catalogo-Vetcare-HC-Group.pdf');
+      if (redirectDoneSubEl) redirectDoneSubEl.textContent = hcT(cfg.redirectSubKey);
+      if (vcRedirectManualDl && cfg.pdfUrl){
+        vcRedirectManualDl.href = cfg.pdfUrl;
+        vcRedirectManualDl.setAttribute('download', cfg.downloadName);
+        vcRedirectManualDl.classList.toggle('is-medicodont', dlKey === 'medicodont');
+        var manualSpan = vcRedirectManualDl.querySelector('span');
+        if (manualSpan) manualSpan.textContent = hcT(cfg.btnDownloadAgainKey);
         vcRedirectManualDl.hidden = false;
       }
     } else {
@@ -1646,13 +1775,16 @@ function hcT(key){
     }
   }
 
-  /* ---------- MODAL: CATÁLOGO VETCARE (ancho completo + descarga desde Contacto) ---------- */
+  /* ---------- MODAL: CATÁLOGOS VETCARE Y MEDICODONT (ancho completo + descarga desde Contacto) ---------- */
   (function initVetcareCatalogModal(){
     var modal = document.getElementById('vetcareCatalogModal');
-    if (!modal || !VETCARE_CATALOG_PAGES.length) return;
+    if (!modal || (!VETCARE_CATALOG_PAGES.length && !MEDICODONT_CATALOG_PAGES.length)) return;
 
     var closeBtn = document.getElementById('vcModalClose');
     var headerDownloadBtn = document.getElementById('vcHeaderDownloadBtn');
+    var brandLogoImg = document.getElementById('vcBrandLogoImg');
+    var titleEl = document.getElementById('vcModalTitle');
+    var metaEl = document.getElementById('vcModalMeta');
     var stage = document.getElementById('vcViewerStage');
     var pageImg = document.getElementById('vcPageImg');
     var prevBtn = document.getElementById('vcPrevPage');
@@ -1662,30 +1794,53 @@ function hcT(key){
     var counterEl = document.getElementById('vcPageCounter');
     var hintEl = document.getElementById('vcViewerGateHint');
 
-    var TOTAL_PAGES = VETCARE_CATALOG_PAGES.length;
-    var currentPage = 1;
+    var activeCatalogKey = 'vetcare';
+    var pageByCatalog = { vetcare: 1, medicodont: 1 };
+    var knownPrefixByCatalog = { vetcare: null, medicodont: null };
     var lastFocused = null;
     var touchStartX = null;
 
-    var knownWorkingPrefix = null;
+    function getActiveConfig(){
+      return CATALOG_CONFIGS[activeCatalogKey] || CATALOG_CONFIGS.vetcare;
+    }
+
+    function getTotalPages(){
+      var cfg = getActiveConfig();
+      return (cfg && cfg.pages && cfg.pages.length) ? cfg.pages.length : 0;
+    }
+
+    function applyCatalogThemeAndMeta(catalogKey){
+      var cfg = CATALOG_CONFIGS[catalogKey] || CATALOG_CONFIGS.vetcare;
+      var isMedicodont = catalogKey === 'medicodont';
+      modal.classList.toggle('vc-modal--medicodont', isMedicodont);
+      if (brandLogoImg){
+        brandLogoImg.src = cfg.logoUrl;
+        brandLogoImg.alt = cfg.brandName;
+      }
+      if (titleEl) titleEl.textContent = hcT(cfg.modalTitleKey);
+      if (metaEl) metaEl.textContent = hcT(cfg.modalMetaKey);
+      if (headerDownloadBtn) headerDownloadBtn.setAttribute('aria-label', hcT(cfg.dlAriaKey));
+    }
 
     function getCandidatePageUrls(pageNum){
+      var cfg = getActiveConfig();
       var pNum = (pageNum < 10 ? '0' : '') + pageNum;
       var candidates = [];
-      if (knownWorkingPrefix){
-        candidates.push(knownWorkingPrefix + 'p_' + pNum + '.webp');
+      var knownPrefix = knownPrefixByCatalog[activeCatalogKey];
+      if (knownPrefix){
+        candidates.push(knownPrefix + 'p_' + pNum + '.webp');
       }
-      var primary = VETCARE_CATALOG_PAGES[pageNum - 1];
+      var primary = cfg.pages[pageNum - 1];
       if (primary) candidates.push(primary);
-      candidates.push('./vetcare-catalog/p_' + pNum + '.webp');
-      candidates.push('./src/assets/vetcare-catalog/p_' + pNum + '.webp');
-      candidates.push('./public/vetcare-catalog/p_' + pNum + '.webp');
-      candidates.push('vetcare-catalog/p_' + pNum + '.webp');
+      candidates.push('./imagenes/' + cfg.folder + '/p_' + pNum + '.webp');
+      candidates.push('./src/assets/' + cfg.folder + '/p_' + pNum + '.webp');
+      candidates.push('./public/imagenes/' + cfg.folder + '/p_' + pNum + '.webp');
+      candidates.push('imagenes/' + cfg.folder + '/p_' + pNum + '.webp');
       try {
-        candidates.push(new URL('./vetcare-catalog/p_' + pNum + '.webp', import.meta.url).href);
+        candidates.push(new URL('./imagenes/' + cfg.folder + '/p_' + pNum + '.webp', import.meta.url).href);
       } catch(e){}
       try {
-        candidates.push(new URL('./src/assets/vetcare-catalog/p_' + pNum + '.webp', import.meta.url).href);
+        candidates.push(new URL('./src/assets/' + cfg.folder + '/p_' + pNum + '.webp', import.meta.url).href);
       } catch(e){}
       return candidates.filter(function(item, idx, arr){
         return item && arr.indexOf(item) === idx;
@@ -1702,13 +1857,16 @@ function hcT(key){
       if (!stage) return;
       if (stage.querySelector('.vc-pdf-fallback')) return;
       if (pageImg) pageImg.style.display = 'none';
-      var pdfUrl = VETCARE_PDF_URL || './catalogo-vetcare.pdf';
+      var cfg = getActiveConfig();
+      var pdfUrl = cfg.pdfUrl || cfg.fallbackPdfPath;
+      var stageBg = activeCatalogKey === 'medicodont' ? '#061A38' : '#0E2317';
+      var accentBg = activeCatalogKey === 'medicodont' ? '#1F90FF' : '#94C11E';
       var fb = document.createElement('div');
       fb.className = 'vc-pdf-fallback';
-      fb.style.cssText = 'width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#0E2317;color:#fff;padding:20px;text-align:center;box-sizing:border-box;z-index:3;position:relative;';
-      fb.innerHTML = '<iframe src="' + pdfUrl + '#page=' + pageNum + '" style="width:100%;height:100%;flex:1 1 auto;border:none;border-radius:6px;background:#fff;min-height:320px;" title="Catálogo Vetcare PDF"></iframe>' +
+      fb.style.cssText = 'width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;background:' + stageBg + ';color:#fff;padding:20px;text-align:center;box-sizing:border-box;z-index:3;position:relative;';
+      fb.innerHTML = '<iframe src="' + pdfUrl + '#page=' + pageNum + '" style="width:100%;height:100%;flex:1 1 auto;border:none;border-radius:6px;background:#fff;min-height:320px;" title="' + hcT(cfg.modalTitleKey) + '"></iframe>' +
         '<div style="margin-top:12px;display:flex;gap:12px;align-items:center;justify-content:center;flex-wrap:wrap;">' +
-        '<a href="' + pdfUrl + '" target="_blank" rel="noopener noreferrer" style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;background:#94C11E;color:#0E2317;font-weight:700;border-radius:6px;text-decoration:none;font-size:0.9rem;">Abrir PDF en pestaña nueva</a>' +
+        '<a href="' + pdfUrl + '" target="_blank" rel="noopener noreferrer" style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;background:' + accentBg + ';color:' + stageBg + ';font-weight:700;border-radius:6px;text-decoration:none;font-size:0.9rem;">Abrir PDF en pestaña nueva</a>' +
         '<button type="button" id="vcFallbackDlBtn" style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;background:rgba(255,255,255,0.15);color:#fff;font-weight:600;border-radius:6px;border:1px solid rgba(255,255,255,0.3);cursor:pointer;font-size:0.9rem;">Descargar PDF</button>' +
         '</div>';
       stage.appendChild(fb);
@@ -1716,13 +1874,14 @@ function hcT(key){
       if (fbDlBtn) {
         fbDlBtn.addEventListener('click', function(){
           if (headerDownloadBtn) headerDownloadBtn.click();
-          else triggerVetcarePdfDownload();
+          else triggerCatalogPdfDownload(activeCatalogKey);
         });
       }
     }
 
     function preloadPage(pageNum){
-      if (pageNum < 1 || pageNum > TOTAL_PAGES) return;
+      var total = getTotalPages();
+      if (pageNum < 1 || pageNum > total) return;
       var candidates = getCandidatePageUrls(pageNum);
       var src = candidates[0];
       if (!src) return;
@@ -1731,38 +1890,45 @@ function hcT(key){
     }
 
     function updateViewerCopy(){
+      var cfg = getActiveConfig();
+      var total = getTotalPages();
+      var curPage = pageByCatalog[activeCatalogKey] || 1;
       if (counterEl){
         var tpl = hcT('vc_page_of') || 'Página {n} / {total}';
-        counterEl.textContent = tpl.replace('{n}', String(currentPage)).replace('{total}', String(TOTAL_PAGES));
+        counterEl.textContent = tpl.replace('{n}', String(curPage)).replace('{total}', String(total));
       }
       if (pageImg){
-        var altTpl = hcT('vc_page_alt') || 'Página {n} del catálogo Vetcare';
-        pageImg.alt = altTpl.replace('{n}', String(currentPage));
+        var altTpl = hcT(cfg.pageAltKey) || ('Página {n} del catálogo ' + cfg.brandName);
+        pageImg.alt = altTpl.replace('{n}', String(curPage));
       }
       if (hintEl){
-        hintEl.textContent = vcPdfUnlocked ? hcT('vc_viewer_hint_unlocked') : hcT('vc_viewer_hint');
+        hintEl.textContent = unlockedCatalogs[activeCatalogKey] ? hcT('vc_viewer_hint_unlocked') : hcT('vc_viewer_hint');
       }
     }
 
     function renderPage(pageNum){
+      var total = getTotalPages();
+      if (!total) return;
       if (pageNum < 1) pageNum = 1;
-      if (pageNum > TOTAL_PAGES) pageNum = TOTAL_PAGES;
-      currentPage = pageNum;
+      if (pageNum > total) pageNum = total;
+      pageByCatalog[activeCatalogKey] = pageNum;
+      var renderCatalogKey = activeCatalogKey;
 
-      var candidates = getCandidatePageUrls(currentPage);
+      var candidates = getCandidatePageUrls(pageNum);
       if (stage) stage.classList.add('is-loading');
 
       function tryCandidate(idx){
+        if (activeCatalogKey !== renderCatalogKey || pageByCatalog[renderCatalogKey] !== pageNum) return;
         if (idx >= candidates.length){
           // Ninguna imagen funcionó; mostramos el visor integrado de PDF
           if (stage) stage.classList.remove('is-loading');
-          showPdfFallback(currentPage);
+          showPdfFallback(pageNum);
           return;
         }
         var targetSrc = candidates[idx];
         var testImg = new Image();
         testImg.onload = function(){
-          if (currentPage !== pageNum) return;
+          if (activeCatalogKey !== renderCatalogKey || pageByCatalog[renderCatalogKey] !== pageNum) return;
           removePdfFallback();
           if (stage) stage.classList.remove('is-loading');
           if (pageImg){
@@ -1772,7 +1938,7 @@ function hcT(key){
           var pNum = (pageNum < 10 ? '0' : '') + pageNum;
           var pIdx = targetSrc.indexOf('p_' + pNum + '.webp');
           if (pIdx !== -1){
-            knownWorkingPrefix = targetSrc.substring(0, pIdx);
+            knownPrefixByCatalog[renderCatalogKey] = targetSrc.substring(0, pIdx);
           }
         };
         testImg.onerror = function(){
@@ -1783,26 +1949,38 @@ function hcT(key){
 
       tryCandidate(0);
 
-      var atStart = currentPage <= 1;
-      var atEnd = currentPage >= TOTAL_PAGES;
+      var atStart = pageNum <= 1;
+      var atEnd = pageNum >= total;
       [prevBtn, footerPrev].forEach(function(b){ if (b) b.disabled = atStart; });
       [nextBtn, footerNext].forEach(function(b){ if (b) b.disabled = atEnd; });
 
       updateViewerCopy();
-      preloadPage(currentPage + 1);
-      preloadPage(currentPage - 1);
+      preloadPage(pageNum + 1);
+      preloadPage(pageNum - 1);
     }
 
-    function openVetcareModal(triggerEl){
+    function openCatalogModal(catalogKey, triggerEl){
+      var key = CATALOG_CONFIGS[catalogKey] ? catalogKey : 'vetcare';
+      activeCatalogKey = key;
       lastFocused = triggerEl || document.activeElement;
+      removePdfFallback();
+      applyCatalogThemeAndMeta(key);
       updateViewerCopy();
-      renderPage(currentPage);
+      renderPage(pageByCatalog[key] || 1);
       modal.classList.add('open');
       modal.setAttribute('aria-hidden', 'false');
       document.body.style.overflow = 'hidden';
       setTimeout(function(){
         if (closeBtn) closeBtn.focus();
       }, 60);
+    }
+
+    function openVetcareModal(triggerEl){
+      openCatalogModal('vetcare', triggerEl);
+    }
+
+    function openMedicodontModal(triggerEl){
+      openCatalogModal('medicodont', triggerEl);
     }
 
     function closeVetcareModal(skipReturnFocus){
@@ -1818,13 +1996,15 @@ function hcT(key){
 
     if (headerDownloadBtn){
       headerDownloadBtn.addEventListener('click', function(){
-        if (vcPdfUnlocked){
-          triggerVetcarePdfDownload();
+        var key = activeCatalogKey;
+        var cfg = getActiveConfig();
+        if (unlockedCatalogs[key]){
+          triggerCatalogPdfDownload(key);
           return;
         }
-        vcPendingPdfDownload = true;
+        pendingPdfCatalog = key;
         closeVetcareModal(true);
-        selectSegmentoUnit('vetcare');
+        selectSegmentoUnit(cfg.unitValue);
         syncVcContactNotice();
         if (status){
           status.className = 'form-status';
@@ -1848,10 +2028,10 @@ function hcT(key){
     }
 
     [prevBtn, footerPrev].forEach(function(btn){
-      if (btn) btn.addEventListener('click', function(){ renderPage(currentPage - 1); });
+      if (btn) btn.addEventListener('click', function(){ renderPage((pageByCatalog[activeCatalogKey] || 1) - 1); });
     });
     [nextBtn, footerNext].forEach(function(btn){
-      if (btn) btn.addEventListener('click', function(){ renderPage(currentPage + 1); });
+      if (btn) btn.addEventListener('click', function(){ renderPage((pageByCatalog[activeCatalogKey] || 1) + 1); });
     });
 
     if (stage){
@@ -1865,7 +2045,8 @@ function hcT(key){
         var dx = e.changedTouches[0].clientX - touchStartX;
         touchStartX = null;
         if (Math.abs(dx) > 40){
-          renderPage(dx < 0 ? currentPage + 1 : currentPage - 1);
+          var cur = pageByCatalog[activeCatalogKey] || 1;
+          renderPage(dx < 0 ? cur + 1 : cur - 1);
         }
       }, { passive: true });
     }
@@ -1881,17 +2062,23 @@ function hcT(key){
         closeVetcareModal(false);
       } else if (e.key === 'ArrowLeft' && (!document.activeElement || !/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName))){
         e.preventDefault();
-        renderPage(currentPage - 1);
+        renderPage((pageByCatalog[activeCatalogKey] || 1) - 1);
       } else if (e.key === 'ArrowRight' && (!document.activeElement || !/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName))){
         e.preventDefault();
-        renderPage(currentPage + 1);
+        renderPage((pageByCatalog[activeCatalogKey] || 1) + 1);
       }
     });
 
-    vcViewerCopyRefreshFn = updateViewerCopy;
+    vcViewerCopyRefreshFn = function(){
+      applyCatalogThemeAndMeta(activeCatalogKey);
+      updateViewerCopy();
+    };
     window.openVetcareCatalogModal = openVetcareModal;
+    window.openMedicodontCatalogModal = openMedicodontModal;
+    window.openCatalogModal = openCatalogModal;
     window.closeVetcareCatalogModal = closeVetcareModal;
     window.refreshVetcareCatalogUI = function(){
+      applyCatalogThemeAndMeta(activeCatalogKey);
       updateViewerCopy();
       syncVcContactNotice();
     };
@@ -2769,7 +2956,7 @@ function hcT(key){
    - 100% responsive en móvil (375px, 390px, 414px)
    ============================================================ */
 (function initBuilderBotResponsive() {
-  var AVATAR_IMG_URL = new URL("./avatar.png", import.meta.url).href;
+  var AVATAR_IMG_URL = new URL("./imagenes/avatar.png", import.meta.url).href;
 
   function injectStatusStylesIntoRoot(root) {
     if (!root || !root.querySelector) return;
@@ -3116,6 +3303,10 @@ function hcT(key){
       var unit = card.getAttribute('data-unit');
       if (unit === 'vetcare' && typeof window.openVetcareCatalogModal === 'function'){
         window.openVetcareCatalogModal(card);
+        return;
+      }
+      if (unit === 'medicodont' && typeof window.openMedicodontCatalogModal === 'function'){
+        window.openMedicodontCatalogModal(card);
         return;
       }
       var sel = document.getElementById('segmento');

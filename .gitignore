@@ -9,4 +9,4 @@ public/assets/aistudio/
 .vscode/
 .idea/
 *.tmp
-
+bun.lock

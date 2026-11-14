@@ -3863,8 +3863,12 @@ chat-widget-button[is-open] .icon-wrapper svg {
   width: 100%;
   display: flex;
   flex-direction: column;
-  gap: 20px;
-  padding: 12px 0 18px;
+  gap: 0;
+  padding: 6px 0;
+  background: #ffffff;
+  border-top: 1px solid rgba(15, 23, 42, 0.07);
+  border-bottom: 1px solid rgba(15, 23, 42, 0.07);
+  box-shadow: 0 10px 28px rgba(15, 35, 65, 0.045);
   overflow: hidden;
   -webkit-mask-image: linear-gradient(90deg, transparent 0%, #000 7%, #000 93%, transparent 100%);
   mask-image: linear-gradient(90deg, transparent 0%, #000 7%, #000 93%, transparent 100%);
@@ -3872,12 +3876,16 @@ chat-widget-button[is-open] .icon-wrapper svg {
 .aliados-marquee{
   display: flex;
   width: 100%;
+  padding: 12px 0;
   overflow: visible;
+}
+.aliados-marquee + .aliados-marquee{
+  border-top: 1px solid rgba(15, 23, 42, 0.045);
 }
 .aliados-track{
   display: flex;
   align-items: center;
-  gap: 22px;
+  gap: 0;
   width: max-content;
   will-change: transform;
 }
@@ -3902,66 +3910,69 @@ chat-widget-button[is-open] .icon-wrapper svg {
 
 .aliado-card{
   position: relative;
-  flex: 0 0 220px;
-  height: 106px;
-  padding: 16px 24px;
-  border-radius: 16px;
-  background: #ffffff;
-  border: 1px solid rgba(15, 23, 42, 0.07);
-  box-shadow: 0 6px 20px rgba(15, 35, 65, 0.055), 0 1px 3px rgba(15, 35, 65, 0.04);
+  flex: 0 0 230px;
+  height: 78px;
+  padding: 8px 34px;
+  border-radius: 0;
+  background: transparent;
+  border: none;
+  box-shadow: none;
   display: flex;
   align-items: center;
   justify-content: center;
-  overflow: hidden;
-  transition: transform .32s cubic-bezier(.2,.8,.2,1), box-shadow .32s ease, border-color .28s ease;
+  overflow: visible;
+  transition: transform .32s cubic-bezier(.2,.8,.2,1);
 }
-.aliado-card::before{
+.aliado-card::after{
   content: "";
   position: absolute;
-  inset: 0;
-  background: linear-gradient(115deg, transparent 25%, rgba(14, 112, 182, 0.07) 50%, transparent 75%);
-  transform: translateX(-120%);
-  transition: transform .65s cubic-bezier(.2,.8,.2,1);
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 1px;
+  height: 28px;
+  background: rgba(15, 23, 42, 0.08);
   pointer-events: none;
-}
-.aliado-card:hover{
-  transform: translateY(-5px) scale(1.02);
-  border-color: rgba(14, 112, 182, 0.28);
-  box-shadow: 0 16px 32px rgba(14, 112, 182, 0.14), 0 4px 10px rgba(15, 35, 65, 0.06);
-}
-.aliado-card:hover::before{
-  transform: translateX(120%);
 }
 .aliado-card img{
   display: block;
   width: auto;
   height: auto;
   max-width: 100%;
-  max-height: 68px;
+  max-height: 62px;
   object-fit: contain;
-  transition: transform .35s cubic-bezier(.2,.8,.2,1);
+  transition: transform .35s cubic-bezier(.2,.8,.2,1), opacity .28s ease, filter .28s ease;
+}
+.aliados-marquee:hover .aliado-card:not(:hover) img{
+  opacity: 0.55;
+}
+.aliado-card:hover{
+  transform: translateY(-3px) scale(1.06);
 }
 .aliado-card:hover img{
-  transform: scale(1.06);
+  opacity: 1;
+  filter: drop-shadow(0 8px 16px rgba(14, 112, 182, 0.16));
 }
 
 @media (max-width: 640px){
   .aliados-marquee-wrap{
-    gap: 14px;
+    padding: 4px 0;
     -webkit-mask-image: linear-gradient(90deg, transparent 0%, #000 4%, #000 96%, transparent 100%);
     mask-image: linear-gradient(90deg, transparent 0%, #000 4%, #000 96%, transparent 100%);
   }
-  .aliados-track{
-    gap: 14px;
+  .aliados-marquee{
+    padding: 10px 0;
   }
   .aliado-card{
     flex: 0 0 172px;
-    height: 86px;
-    padding: 12px 18px;
-    border-radius: 14px;
+    height: 64px;
+    padding: 6px 22px;
+  }
+  .aliado-card::after{
+    height: 22px;
   }
   .aliado-card img{
-    max-height: 54px;
+    max-height: 48px;
   }
 }
 
@@ -3976,7 +3987,9 @@ chat-widget-button[is-open] .icon-wrapper svg {
     width: 100%;
     padding: 0 20px;
   }
-  .aliados-marquee--left .aliado-card[aria-hidden="true"]{
+  .aliados-marquee--left .aliado-card[aria-hidden="true"],
+  .aliado-card::after{
     display: none;
   }
 }
+

@@ -95,7 +95,7 @@ if (NativeEventSource) {
 -->
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob: https: http: ws: wss:; base-uri 'self'; object-src 'none'; img-src 'self' data: blob: https: http:; media-src 'self' data: blob: https: http:; style-src 'self' 'unsafe-inline' https: http:; font-src 'self' data: https: http:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https: http:; connect-src 'self' https: http: ws: wss:; frame-src 'self' https: http:; form-action 'self' https: mailto: tel:;" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; img-src 'self' data: blob: https:; media-src 'self' blob: https://egwabbnmscqfqbvjxqqr.supabase.co; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com https://cdn.builderbot.cloud https://*.builderbot.cloud; font-src 'self' data: https://fonts.gstatic.com; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.builderbot.cloud; connect-src 'self' https://script.google.com https://script.googleusercontent.com https://egwabbnmscqfqbvjxqqr.supabase.co https://*.tile.openstreetmap.org https://cdn.builderbot.cloud https://*.builderbot.cloud wss://*.builderbot.cloud wss:; frame-src 'self' https://www.google.com https://maps.google.com https://egwabbnmscqfqbvjxqqr.supabase.co https://cdn.builderbot.cloud https://*.builderbot.cloud; form-action 'self' https://script.google.com mailto: tel:;" />
 <meta name="referrer" content="strict-origin-when-cross-origin" />
 <meta http-equiv="X-Content-Type-Options" content="nosniff" />
 <title>HC Group Latam</title>
@@ -175,7 +175,7 @@ if (NativeEventSource) {
           <span class="lang-divider">/</span>
           <button type="button" class="lang-btn" data-lang="en">EN</button>
         </div>
-        <a href="https://www.odoo.com/es_ES/my" target="_blank" rel="noopener" class="header-btn header-btn--outline" data-portal><span data-i18n="nav_portal">Portal Clientes</span></a>
+        <a href="https://www.odoo.com/es_ES/my" target="_blank" rel="noopener noreferrer" class="header-btn header-btn--outline" data-portal><span data-i18n="nav_portal">Portal Clientes</span></a>
         <a href="./index.html#nosotros" class="header-btn header-btn--solid" id="headerAboutBtn"><span data-i18n="nav_nosotros">Nosotros</span></a>
         <div class="header-search-wrap" id="headerSearchWrap">
           <button type="button" class="header-icon-btn search-toggle" id="headerSearchToggle" aria-label="Buscar" aria-expanded="false" aria-controls="shopSearch"><svg viewBox="0 0 24 24"><use href="#ic-search"/></svg></button>
@@ -227,7 +227,7 @@ if (NativeEventSource) {
         </nav>
 
         <div class="mobile-drawer-footer">
-          <a href="https://www.odoo.com/es_ES/my" target="_blank" rel="noopener" class="mobile-drawer-portal" data-portal>
+          <a href="https://www.odoo.com/es_ES/my" target="_blank" rel="noopener noreferrer" class="mobile-drawer-portal" data-portal>
             <span data-i18n="nav_portal">Portal de clientes</span>
             <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><use href="#ic-arrow"/></svg>
           </a>
@@ -257,7 +257,7 @@ if (NativeEventSource) {
       <div class="hero-copy">
         <h1><span class="hero-title-blue" data-i18n="hero_title_line1">Transformando la salud a través de</span> <em><span class="tw-wrap" id="heroTwWrap"><span class="tw-text" id="heroTwText" data-tw-full="soluciones integrales">soluciones integrales</span><span class="tw-cursor" id="heroTwCursor" aria-hidden="true"></span></span></em>.</h1>
         <div class="hero-actions">
-          <a href="https://www.odoo.com/es_ES/my" target="_blank" rel="noopener" class="btn btn-primary" data-portal data-i18n="hero_btn_portal">Acceder al portal</a>
+          <a href="https://www.odoo.com/es_ES/my" target="_blank" rel="noopener noreferrer" class="btn btn-primary" data-portal data-i18n="hero_btn_portal">Acceder al portal</a>
           <a href="#equipo" class="btn btn-ghost" data-i18n="hero_btn_units">Conozca nuestros equipos</a>
         </div>
       </div>
@@ -528,7 +528,7 @@ if (NativeEventSource) {
         <div class="contact-map">
           <div id="hcMap" role="img" aria-label="Mapa de ubicación de HC GROUP en Managua"></div>
         </div>
-        <a class="map-open-link" href="https://www.google.com/maps/search/?api=1&query=12.1373625,-86.284015625" target="_blank" rel="noopener">
+        <a class="map-open-link" href="https://www.google.com/maps/search/?api=1&query=12.1373625,-86.284015625" target="_blank" rel="noopener noreferrer">
           <svg class="ic" viewBox="0 0 24 24"><use href="#ic-target"/></svg>
           <span data-i18n="map_link">Ver ubicación exacta en Google Maps</span>
         </a>
@@ -601,7 +601,7 @@ if (NativeEventSource) {
         <ul class="contact-list">
           <li><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8"><use href="#ic-pin"/></svg><span>SINSA HOME, 1/2 Calle Nte.<br>Managua 12066, Nicaragua.</span></li>
           <li><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8"><use href="#ic-mail"/></svg><a href="mailto:gerencia@hcgrouplatam.com">gerencia@hcgrouplatam.com</a></li>
-          <li><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8"><use href="#ic-mail"/></svg><a href="https://hcgrouplatam.com" target="_blank" rel="noopener">hcgrouplatam.com</a></li>
+          <li><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8"><use href="#ic-mail"/></svg><a href="https://hcgrouplatam.com" target="_blank" rel="noopener noreferrer">hcgrouplatam.com</a></li>
           <li><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8"><use href="#ic-phone"/></svg><a href="tel:+50575536640">7553 6640</a></li>
         </ul>
         <div class="social-row">

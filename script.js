@@ -27,13 +27,7 @@ if (!VETCARE_CATALOG_PAGES.length) {
   }
 }
 
-var VETCARE_PDF_URL = (function(){
-  try {
-    return new URL('./pdf/catalogo-vetcare.pdf', import.meta.url).href;
-  } catch(e) {
-    return './pdf/catalogo-vetcare.pdf';
-  }
-})();
+var VETCARE_PDF_URL = 'https://egwabbnmscqfqbvjxqqr.supabase.co/storage/v1/object/public/videos%20%20hcgroup/catalogo-vetcare.pdf.pdf';
 
 /* ---------- ASSETS CATÁLOGO MEDICODONT (resolución estática Vite con fallback) ---------- */
 var MEDICODONT_CATALOG_MODULES = {};
@@ -58,13 +52,38 @@ if (!MEDICODONT_CATALOG_PAGES.length) {
   }
 }
 
-var MEDICODONT_PDF_URL = (function(){
-  try {
-    return new URL('./pdf/catalogo-medicodont.pdf', import.meta.url).href;
-  } catch(e) {
-    return './pdf/catalogo-medicodont.pdf';
+var MEDICODONT_PDF_URL = 'https://egwabbnmscqfqbvjxqqr.supabase.co/storage/v1/object/public/videos%20%20hcgroup/catalogo-medicodont.pdf.pdf';
+
+/* ---------- ASSETS CATÁLOGO SERVICIO TÉCNICO (resolución estática Vite con fallback) ---------- */
+var SERVICIO_TECNICO_CATALOG_MODULES = {};
+try {
+  if (typeof import.meta !== 'undefined' && typeof import.meta.glob === 'function') {
+    SERVICIO_TECNICO_CATALOG_MODULES = import.meta.glob('./src/assets/servicio-tecnico-catalog/*.webp', { eager: true, query: '?url', import: 'default' });
   }
-})();
+} catch (e) {}
+
+var SERVICIO_TECNICO_CATALOG_PAGES = Object.keys(SERVICIO_TECNICO_CATALOG_MODULES)
+  .sort()
+  .map(function(key){ return SERVICIO_TECNICO_CATALOG_MODULES[key]; });
+
+if (!SERVICIO_TECNICO_CATALOG_PAGES.length) {
+  for (var sp = 1; sp <= 22; sp++) {
+    var spNum = (sp < 10 ? '0' : '') + sp;
+    try {
+      SERVICIO_TECNICO_CATALOG_PAGES.push(new URL('./src/assets/servicio-tecnico-catalog/p_' + spNum + '.webp', import.meta.url).href);
+    } catch(e) {
+      SERVICIO_TECNICO_CATALOG_PAGES.push('./src/assets/servicio-tecnico-catalog/p_' + spNum + '.webp');
+    }
+  }
+}
+
+var SERVICIO_TECNICO_PDF_URL = 'https://egwabbnmscqfqbvjxqqr.supabase.co/storage/v1/object/public/videos%20%20hcgroup/catalogo-servicio-tecnico.pdf.pdf';
+
+window.HC_CATALOG_PDF_URLS = {
+  medicodont: MEDICODONT_PDF_URL,
+  'servicio-tecnico': SERVICIO_TECNICO_PDF_URL,
+  vetcare: VETCARE_PDF_URL
+};
 
 var VETCARE_LOGO_URL = (function(){
   try {
@@ -82,6 +101,54 @@ var MEDICODONT_LOGO_URL = (function(){
   }
 })();
 
+/* ---------- UTILIDADES DE SEGURIDAD (XSS, URLs, SANITIZACIÓN, COOLDOWN) ---------- */
+function hcSanitizeText(value, maxLen, keepNewlines){
+  var str = String(value == null ? '' : value);
+  str = str.replace(keepNewlines ? /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g : /[\u0000-\u001F\u007F]/g, '');
+  str = str.trim();
+  if (maxLen && str.length > maxLen) str = str.slice(0, maxLen);
+  return str;
+}
+
+function hcIsSafeHttpsUrl(url){
+  if (!url || typeof url !== 'string') return false;
+  var clean = url.trim();
+  if (!clean) return false;
+  try {
+    var parsed = new URL(clean, window.location.origin);
+    return parsed.protocol === 'https:';
+  } catch (e) {
+    return false;
+  }
+}
+
+function hcSanitizeImageSrc(src, allowRasterDataUri){
+  if (!src || typeof src !== 'string') return '';
+  var clean = src.trim();
+  if (!clean || /[\u0000-\u001F\u007F]/.test(clean)) return '';
+  if (allowRasterDataUri && /^data:image\/(png|jpeg|jpg|webp|gif);base64,[A-Za-z0-9+/=]+$/i.test(clean)){
+    return clean.length <= 2800000 ? clean : '';
+  }
+  if (/^data:|^javascript:|^vbscript:/i.test(clean)) return '';
+  if (/^(\.\/|\/(?!\/)|imagenes\/|assets\/|src\/)/i.test(clean)) return clean;
+  try {
+    var parsed = new URL(clean, window.location.origin);
+    if (parsed.protocol === 'https:' || (parsed.origin === window.location.origin && (parsed.protocol === 'http:' || parsed.protocol === 'https:'))){
+      return clean;
+    }
+  } catch (e) {}
+  return '';
+}
+
+var hcSubmitCooldowns = {};
+function hcCanSubmit(actionKey, cooldownMs){
+  var now = Date.now();
+  var last = hcSubmitCooldowns[actionKey] || 0;
+  var waitMs = cooldownMs || 5000;
+  if (now - last < waitMs) return false;
+  hcSubmitCooldowns[actionKey] = now;
+  return true;
+}
 
 /* ---------- 0. CONTROL DE INICIO DESDE ARRIBA (SCROLL TO TOP GARANTIZADO) ---------- */
 if ('scrollRestoration' in history) {
@@ -155,6 +222,7 @@ window.HC_I18N = {
     emp_cta: "Solicitar información",
     emp_vetcare_cta: "Ver catálogo",
     emp_medicodont_cta: "Ver catálogo",
+    emp_servicio_cta: "Ver catálogo",
     vc_modal_title: "Catálogo Vetcare · Equipos Veterinarios",
     vc_modal_meta: "40 páginas · Ultrasonidos, Cirugía, Grooming y Equipos Básicos",
     vc_prev_aria: "Página anterior",
@@ -178,6 +246,13 @@ window.HC_I18N = {
     mc_contact_notice: "Catálogo Medicodont seleccionado: complete su nombre, correo y teléfono/WhatsApp y presione Enviar solicitud para iniciar la descarga automática del PDF.",
     mc_redirect_dl_sub: "La descarga del Catálogo Medicodont comenzó automáticamente. Nuestro equipo le contactará pronto.",
     mc_btn_download_again: "Descargar Catálogo Medicodont (PDF)",
+    st_modal_title: "Catálogo Servicio Técnico · HC GROUP",
+    st_modal_meta: "22 páginas · Soporte integral, ingeniería biomédica y mantenimiento certificado",
+    st_dl_aria: "Descargar catálogo Servicio Técnico en PDF",
+    st_page_alt: "Página {n} del catálogo Servicio Técnico",
+    st_contact_notice: "Catálogo Servicio Técnico seleccionado: complete su nombre, correo y teléfono/WhatsApp y presione Enviar solicitud para iniciar la descarga automática del PDF.",
+    st_redirect_dl_sub: "La descarga del Catálogo Servicio Técnico comenzó automáticamente. Nuestro equipo le contactará pronto.",
+    st_btn_download_again: "Descargar Catálogo Servicio Técnico (PDF)",
     announce_html: '¡Conozca nuestra <a href="#boletin" class="announce-link"><strong>nueva línea</strong></a> de equipos y soluciones para el sector salud! \u{1FA7A}',
     badge_novedad: "Boletín informativo",
     search_placeholder: "Buscar",
@@ -359,6 +434,7 @@ window.HC_I18N = {
     emp_cta: "Request information",
     emp_vetcare_cta: "View catalog",
     emp_medicodont_cta: "View catalog",
+    emp_servicio_cta: "View catalog",
     vc_modal_title: "Vetcare Catalog · Veterinary Equipment",
     vc_modal_meta: "40 pages · Ultrasound, Surgery, Grooming & Basic Equipment",
     vc_prev_aria: "Previous page",
@@ -382,6 +458,13 @@ window.HC_I18N = {
     mc_contact_notice: "Medicodont Catalog selected: complete your name, email & phone/WhatsApp and click Send request to start the automatic PDF download.",
     mc_redirect_dl_sub: "Your Medicodont Catalog download started automatically. Our team will reach out shortly.",
     mc_btn_download_again: "Download Medicodont Catalog (PDF)",
+    st_modal_title: "Technical Service Catalog · HC GROUP",
+    st_modal_meta: "22 pages · Comprehensive support, biomedical engineering & certified maintenance",
+    st_dl_aria: "Download Technical Service catalog PDF",
+    st_page_alt: "Technical Service catalog page {n}",
+    st_contact_notice: "Technical Service Catalog selected: complete your name, email & phone/WhatsApp and click Send request to start the automatic PDF download.",
+    st_redirect_dl_sub: "Your Technical Service Catalog download started automatically. Our team will reach out shortly.",
+    st_btn_download_again: "Download Technical Service Catalog (PDF)",
     announce_html: 'Check out our <a href="#boletin" class="announce-link"><strong>new line</strong></a> of equipment and solutions for the health sector! \u{1FA7A}',
     badge_novedad: "Newsletter",
     search_placeholder: "Search",
@@ -644,20 +727,16 @@ function hcT(key){
         d.textContent = str || '';
         return d.innerHTML;
       }
-            function tarjetaEquipoHTML(miembro){
-        var fotoSrc = miembro.photo ? escaparHTML_(miembro.photo) : '';
-        
-        // Limpiar cualquier cadena en base64 de la fuente de datos
-        if (fotoSrc.indexOf('data:image') === 0) {
-            fotoSrc = '';
-        }
+      function tarjetaEquipoHTML(miembro){
+        var safePhoto = hcSanitizeImageSrc(miembro.photo, false);
+        var fotoSrc = safePhoto ? escaparHTML_(safePhoto) : '';
         
         // Fallback robusto usando onerror y manejando el caso sin foto
         var fotoHTML = fotoSrc
-          ? '<img src="' + fotoSrc + '" alt="' + escaparHTML_(miembro.name) + '" style="width: 100%; height: auto; object-fit: contain;"  draggable="false">'
+          ? '<img src="' + fotoSrc + '" alt="' + escaparHTML_(miembro.name) + '" style="width: 100%; height: auto; object-fit: contain;" draggable="false">'
           : '<div class="team-photo-fallback" style="display:flex;align-items:center;justify-content:center;background:#0E70B6;color:#fff;width:100%;height:100%;font-size:3rem;font-weight:700;">' + escaparHTML_((miembro.name || '?').charAt(0).toUpperCase()) + '</div>';
         
-        return '<figure class="team-card" data-id="' + miembro.id + '">' +
+        return '<figure class="team-card" data-id="' + escaparHTML_(String(miembro.id == null ? '' : miembro.id)) + '">' +
           '<div class="card-img">' + fotoHTML + '</div>' +
           '<figcaption class="meta"><strong>' + escaparHTML_(miembro.name) + '</strong><span>' + escaparHTML_(miembro.role) + '</span></figcaption>' +
         '</figure>';
@@ -1440,7 +1519,7 @@ function hcT(key){
       folder: 'vetcare-catalog',
       pages: VETCARE_CATALOG_PAGES,
       pdfUrl: VETCARE_PDF_URL,
-      fallbackPdfPath: './pdf/catalogo-vetcare.pdf',
+      fallbackPdfPath: VETCARE_PDF_URL,
       downloadName: 'Catalogo-Vetcare-HC-Group.pdf',
       logoUrl: VETCARE_LOGO_URL,
       brandName: 'Vetcare',
@@ -1459,7 +1538,7 @@ function hcT(key){
       folder: 'medicodont-catalog',
       pages: MEDICODONT_CATALOG_PAGES,
       pdfUrl: MEDICODONT_PDF_URL,
-      fallbackPdfPath: './pdf/catalogo-medicodont.pdf',
+      fallbackPdfPath: MEDICODONT_PDF_URL,
       downloadName: 'Catalogo-Medicodont-HC-Group.pdf',
       logoUrl: MEDICODONT_LOGO_URL,
       brandName: 'Medicodont',
@@ -1472,11 +1551,30 @@ function hcT(key){
       btnDownloadAgainKey: 'mc_btn_download_again',
       sheetUnitText: 'Medicodont — equipos médicos (Catálogo PDF)',
       sheetMessage: 'Solicitud de descarga del Catálogo Medicodont PDF'
+    },
+    'servicio-tecnico': {
+      unitValue: 'servicio-tecnico',
+      folder: 'servicio-tecnico-catalog',
+      pages: SERVICIO_TECNICO_CATALOG_PAGES,
+      pdfUrl: SERVICIO_TECNICO_PDF_URL,
+      fallbackPdfPath: SERVICIO_TECNICO_PDF_URL,
+      downloadName: 'Catalogo-Servicio-Tecnico-HC-Group.pdf',
+      logoUrl: MEDICODONT_LOGO_URL,
+      brandName: 'Servicio Técnico',
+      modalTitleKey: 'st_modal_title',
+      modalMetaKey: 'st_modal_meta',
+      dlAriaKey: 'st_dl_aria',
+      pageAltKey: 'st_page_alt',
+      contactNoticeKey: 'st_contact_notice',
+      redirectSubKey: 'st_redirect_dl_sub',
+      btnDownloadAgainKey: 'st_btn_download_again',
+      sheetUnitText: 'Servicio técnico (Catálogo PDF)',
+      sheetMessage: 'Solicitud de descarga del Catálogo Servicio Técnico PDF'
     }
   };
 
   var pendingPdfCatalog = null;
-  var unlockedCatalogs = { vetcare: false, medicodont: false };
+  var unlockedCatalogs = { vetcare: false, medicodont: false, 'servicio-tecnico': false };
   var vcContactNoticeEl = document.getElementById('vcContactCatalogNotice');
   var vcViewerCopyRefreshFn = null;
 
@@ -1485,7 +1583,7 @@ function hcT(key){
     var cfg = pendingPdfCatalog ? CATALOG_CONFIGS[pendingPdfCatalog] : null;
     if (cfg){
       vcContactNoticeEl.textContent = hcT(cfg.contactNoticeKey);
-      vcContactNoticeEl.classList.toggle('is-medicodont', pendingPdfCatalog === 'medicodont');
+      vcContactNoticeEl.classList.toggle('is-medicodont', pendingPdfCatalog === 'medicodont' || pendingPdfCatalog === 'servicio-tecnico');
       vcContactNoticeEl.hidden = false;
     } else {
       vcContactNoticeEl.hidden = true;
@@ -1494,12 +1592,24 @@ function hcT(key){
     }
   }
 
+  function getCatalogDownloadUrl(pdfUrl, downloadName){
+    if (!hcIsSafeHttpsUrl(pdfUrl)) return '';
+    if (downloadName){
+      var sep = pdfUrl.indexOf('?') === -1 ? '?' : '&';
+      return pdfUrl + sep + 'download=' + encodeURIComponent(downloadName);
+    }
+    return pdfUrl;
+  }
+
   function triggerCatalogPdfDownload(catalogKey){
     var cfg = CATALOG_CONFIGS[catalogKey || 'vetcare'];
     if (!cfg || !cfg.pdfUrl) return;
+    var safeUrl = getCatalogDownloadUrl(cfg.pdfUrl, cfg.downloadName);
+    if (!hcIsSafeHttpsUrl(safeUrl)) return;
     var a = document.createElement('a');
-    a.href = cfg.pdfUrl;
+    a.href = safeUrl;
     a.download = cfg.downloadName;
+    a.rel = 'noopener noreferrer';
     a.style.display = 'none';
     document.body.appendChild(a);
     a.click();
@@ -1541,6 +1651,7 @@ function hcT(key){
   if (form){
     if (form.segmento){
       form.segmento.addEventListener('change', function(){
+        form.segmento.classList.remove('nf-placeholder');
         if (pendingPdfCatalog && form.segmento.value !== pendingPdfCatalog){
           pendingPdfCatalog = null;
           syncVcContactNotice();
@@ -1558,16 +1669,20 @@ function hcT(key){
       var segmentoTriggerEl = document.getElementById('segmentoTrigger');
       if (segmentoTriggerEl) segmentoTriggerEl.classList.remove('invalid');
 
+      var cleanNombre = hcSanitizeText(nombre ? nombre.value : '', 120, false);
+      var cleanEmail = hcSanitizeText(email ? email.value : '', 160, false);
+      var cleanTelefono = hcSanitizeText(telefono ? telefono.value : '', 25, false);
+
       var catalogDownloadKey = (pendingPdfCatalog && segmento.value === pendingPdfCatalog && CATALOG_CONFIGS[pendingPdfCatalog])
         ? pendingPdfCatalog
         : null;
       var isCatalogDownloadFlow = Boolean(catalogDownloadKey);
       var ok = true;
-      if (!nombre.value.trim() || (isCatalogDownloadFlow && nombre.value.trim().length < 2)){
+      if (!cleanNombre || (isCatalogDownloadFlow && cleanNombre.length < 2)){
         nombre.classList.add('invalid');
         ok = false;
       }
-      if (!isEmail(email.value.trim())){
+      if (!isEmail(cleanEmail)){
         email.classList.add('invalid');
         ok = false;
       }
@@ -1577,7 +1692,7 @@ function hcT(key){
         ok = false;
       }
       if (isCatalogDownloadFlow){
-        var telDigits = telefono && telefono.value ? telefono.value.replace(/\D/g, '') : '';
+        var telDigits = cleanTelefono.replace(/\D/g, '');
         if (telDigits.length < 6){
           if (telefono) telefono.classList.add('invalid');
           ok = false;
@@ -1594,23 +1709,26 @@ function hcT(key){
         }
         return;
       }
+      if (!hcCanSubmit('leadForm', 5000)) return;
       var prefijo = form.prefijo, mensaje = form.mensaje;
       var activeCfg = isCatalogDownloadFlow ? CATALOG_CONFIGS[catalogDownloadKey] : null;
       var unidadTexto = activeCfg
         ? activeCfg.sheetUnitText
         : segmento.options[segmento.selectedIndex].text;
-      var telefonoCompleto = telefono.value.trim() ? (prefijo.value + ' ' + telefono.value.trim()) : hcT('mail_no_phone');
-      var mensajeFinal = mensaje.value.trim() || (activeCfg ? activeCfg.sheetMessage : '');
+      var prefijoVal = prefijo ? hcSanitizeText(prefijo.value, 12, false) : '';
+      var telefonoCompleto = cleanTelefono ? (prefijoVal + ' ' + cleanTelefono) : hcT('mail_no_phone');
+      var cleanMensaje = hcSanitizeText(mensaje ? mensaje.value : '', 1500, true);
+      var mensajeFinal = cleanMensaje || (activeCfg ? activeCfg.sheetMessage : '');
 
       var submitBtn = form.querySelector('button[type="submit"]');
       if (submitBtn) submitBtn.disabled = true;
 
       // El formulario guarda la solicitud en Google Sheets (pestaña "Solicitudes contacto").
       guardarContactoEnGoogleSheets({
-        nombre: nombre.value.trim(),
-        email: email.value.trim(),
+        nombre: cleanNombre,
+        email: cleanEmail,
         telefono: telefonoCompleto,
-        unidad: unidadTexto,
+        unidad: hcSanitizeText(unidadTexto, 120, false),
         mensaje: mensajeFinal
       });
 
@@ -1673,6 +1791,7 @@ function hcT(key){
       vcRedirectManualDl.classList.remove('is-medicodont');
       vcRedirectManualDl.removeAttribute('href');
       vcRedirectManualDl.removeAttribute('download');
+      vcRedirectManualDl.removeAttribute('target');
       var manualSpan = vcRedirectManualDl.querySelector('span');
       if (manualSpan) manualSpan.textContent = hcT('vc_btn_download_again');
     }
@@ -1697,9 +1816,11 @@ function hcT(key){
       if (redirectDoneTitleEl) redirectDoneTitleEl.textContent = hcT('vc_redirect_dl_title');
       if (redirectDoneSubEl) redirectDoneSubEl.textContent = hcT(cfg.redirectSubKey);
       if (vcRedirectManualDl && cfg.pdfUrl){
-        vcRedirectManualDl.href = cfg.pdfUrl;
+        vcRedirectManualDl.href = getCatalogDownloadUrl(cfg.pdfUrl, cfg.downloadName);
         vcRedirectManualDl.setAttribute('download', cfg.downloadName);
-        vcRedirectManualDl.classList.toggle('is-medicodont', dlKey === 'medicodont');
+        vcRedirectManualDl.setAttribute('target', '_blank');
+        vcRedirectManualDl.setAttribute('rel', 'noopener noreferrer');
+        vcRedirectManualDl.classList.toggle('is-medicodont', dlKey === 'medicodont' || dlKey === 'servicio-tecnico');
         var manualSpan = vcRedirectManualDl.querySelector('span');
         if (manualSpan) manualSpan.textContent = hcT(cfg.btnDownloadAgainKey);
         vcRedirectManualDl.hidden = false;
@@ -1783,6 +1904,7 @@ function hcT(key){
     var closeBtn = document.getElementById('vcModalClose');
     var headerDownloadBtn = document.getElementById('vcHeaderDownloadBtn');
     var brandLogoImg = document.getElementById('vcBrandLogoImg');
+    var servicioLogoMark = document.getElementById('vcServicioLogoMark');
     var titleEl = document.getElementById('vcModalTitle');
     var metaEl = document.getElementById('vcModalMeta');
     var stage = document.getElementById('vcViewerStage');
@@ -1791,12 +1913,13 @@ function hcT(key){
     var nextBtn = document.getElementById('vcNextPage');
     var footerPrev = document.getElementById('vcFooterPrev');
     var footerNext = document.getElementById('vcFooterNext');
+    var pageControlsEl = modal.querySelector('.vc-page-controls');
     var counterEl = document.getElementById('vcPageCounter');
     var hintEl = document.getElementById('vcViewerGateHint');
 
     var activeCatalogKey = 'vetcare';
-    var pageByCatalog = { vetcare: 1, medicodont: 1 };
-    var knownPrefixByCatalog = { vetcare: null, medicodont: null };
+    var pageByCatalog = { vetcare: 1, medicodont: 1, 'servicio-tecnico': 1 };
+    var knownPrefixByCatalog = { vetcare: null, medicodont: null, 'servicio-tecnico': null };
     var lastFocused = null;
     var touchStartX = null;
 
@@ -1811,11 +1934,18 @@ function hcT(key){
 
     function applyCatalogThemeAndMeta(catalogKey){
       var cfg = CATALOG_CONFIGS[catalogKey] || CATALOG_CONFIGS.vetcare;
-      var isMedicodont = catalogKey === 'medicodont';
+      var isServicio = catalogKey === 'servicio-tecnico';
+      var isMedicodont = catalogKey === 'medicodont' || isServicio;
       modal.classList.toggle('vc-modal--medicodont', isMedicodont);
       if (brandLogoImg){
+        brandLogoImg.hidden = isServicio;
+        brandLogoImg.style.display = isServicio ? 'none' : 'block';
         brandLogoImg.src = cfg.logoUrl;
         brandLogoImg.alt = cfg.brandName;
+      }
+      if (servicioLogoMark){
+        servicioLogoMark.hidden = !isServicio;
+        servicioLogoMark.style.display = isServicio ? 'block' : 'none';
       }
       if (titleEl) titleEl.textContent = hcT(cfg.modalTitleKey);
       if (metaEl) metaEl.textContent = hcT(cfg.modalMetaKey);
@@ -1832,13 +1962,7 @@ function hcT(key){
       }
       var primary = cfg.pages[pageNum - 1];
       if (primary) candidates.push(primary);
-      candidates.push('./imagenes/' + cfg.folder + '/p_' + pNum + '.webp');
       candidates.push('./src/assets/' + cfg.folder + '/p_' + pNum + '.webp');
-      candidates.push('./public/imagenes/' + cfg.folder + '/p_' + pNum + '.webp');
-      candidates.push('imagenes/' + cfg.folder + '/p_' + pNum + '.webp');
-      try {
-        candidates.push(new URL('./imagenes/' + cfg.folder + '/p_' + pNum + '.webp', import.meta.url).href);
-      } catch(e){}
       try {
         candidates.push(new URL('./src/assets/' + cfg.folder + '/p_' + pNum + '.webp', import.meta.url).href);
       } catch(e){}
@@ -1857,26 +1981,50 @@ function hcT(key){
       if (!stage) return;
       if (stage.querySelector('.vc-pdf-fallback')) return;
       if (pageImg) pageImg.style.display = 'none';
-      var cfg = getActiveConfig();
-      var pdfUrl = cfg.pdfUrl || cfg.fallbackPdfPath;
-      var stageBg = activeCatalogKey === 'medicodont' ? '#061A38' : '#0E2317';
-      var accentBg = activeCatalogKey === 'medicodont' ? '#1F90FF' : '#94C11E';
+      var activeCfg = getActiveConfig();
+      var rawPdfUrl = activeCfg.pdfUrl || activeCfg.fallbackPdfPath;
+      var safePdfUrl = hcIsSafeHttpsUrl(rawPdfUrl) ? rawPdfUrl : '';
+      var stageBg = (activeCatalogKey === 'medicodont' || activeCatalogKey === 'servicio-tecnico') ? '#061A38' : '#0E2317';
+      var accentBg = (activeCatalogKey === 'medicodont' || activeCatalogKey === 'servicio-tecnico') ? '#1F90FF' : '#94C11E';
+
       var fb = document.createElement('div');
       fb.className = 'vc-pdf-fallback';
       fb.style.cssText = 'width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;background:' + stageBg + ';color:#fff;padding:20px;text-align:center;box-sizing:border-box;z-index:3;position:relative;';
-      fb.innerHTML = '<iframe src="' + pdfUrl + '#page=' + pageNum + '" style="width:100%;height:100%;flex:1 1 auto;border:none;border-radius:6px;background:#fff;min-height:320px;" title="' + hcT(cfg.modalTitleKey) + '"></iframe>' +
-        '<div style="margin-top:12px;display:flex;gap:12px;align-items:center;justify-content:center;flex-wrap:wrap;">' +
-        '<a href="' + pdfUrl + '" target="_blank" rel="noopener noreferrer" style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;background:' + accentBg + ';color:' + stageBg + ';font-weight:700;border-radius:6px;text-decoration:none;font-size:0.9rem;">Abrir PDF en pestaña nueva</a>' +
-        '<button type="button" id="vcFallbackDlBtn" style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;background:rgba(255,255,255,0.15);color:#fff;font-weight:600;border-radius:6px;border:1px solid rgba(255,255,255,0.3);cursor:pointer;font-size:0.9rem;">Descargar PDF</button>' +
-        '</div>';
-      stage.appendChild(fb);
-      var fbDlBtn = fb.querySelector('#vcFallbackDlBtn');
-      if (fbDlBtn) {
-        fbDlBtn.addEventListener('click', function(){
-          if (headerDownloadBtn) headerDownloadBtn.click();
-          else triggerCatalogPdfDownload(activeCatalogKey);
-        });
+
+      if (safePdfUrl){
+        var iframe = document.createElement('iframe');
+        iframe.src = safePdfUrl + '#page=' + (parseInt(pageNum, 10) || 1);
+        iframe.style.cssText = 'width:100%;height:100%;flex:1 1 auto;border:none;border-radius:6px;background:#fff;min-height:320px;';
+        iframe.setAttribute('title', hcT(activeCfg.modalTitleKey));
+        fb.appendChild(iframe);
       }
+
+      var actionsRow = document.createElement('div');
+      actionsRow.style.cssText = 'margin-top:12px;display:flex;gap:12px;align-items:center;justify-content:center;flex-wrap:wrap;';
+
+      if (safePdfUrl){
+        var openLink = document.createElement('a');
+        openLink.href = safePdfUrl;
+        openLink.target = '_blank';
+        openLink.rel = 'noopener noreferrer';
+        openLink.style.cssText = 'display:inline-flex;align-items:center;gap:6px;padding:8px 16px;background:' + accentBg + ';color:' + stageBg + ';font-weight:700;border-radius:6px;text-decoration:none;font-size:0.9rem;';
+        openLink.textContent = 'Abrir PDF en pestaña nueva';
+        actionsRow.appendChild(openLink);
+      }
+
+      var fbDlBtn = document.createElement('button');
+      fbDlBtn.type = 'button';
+      fbDlBtn.id = 'vcFallbackDlBtn';
+      fbDlBtn.style.cssText = 'display:inline-flex;align-items:center;gap:6px;padding:8px 16px;background:rgba(255,255,255,0.15);color:#fff;font-weight:600;border-radius:6px;border:1px solid rgba(255,255,255,0.3);cursor:pointer;font-size:0.9rem;';
+      fbDlBtn.textContent = 'Descargar PDF';
+      fbDlBtn.addEventListener('click', function(){
+        if (headerDownloadBtn) headerDownloadBtn.click();
+        else triggerCatalogPdfDownload(activeCatalogKey);
+      });
+      actionsRow.appendChild(fbDlBtn);
+
+      fb.appendChild(actionsRow);
+      stage.appendChild(fb);
     }
 
     function preloadPage(pageNum){
@@ -1895,7 +2043,7 @@ function hcT(key){
       var curPage = pageByCatalog[activeCatalogKey] || 1;
       if (counterEl){
         var tpl = hcT('vc_page_of') || 'Página {n} / {total}';
-        counterEl.textContent = tpl.replace('{n}', String(curPage)).replace('{total}', String(total));
+        counterEl.textContent = total ? tpl.replace('{n}', String(curPage)).replace('{total}', String(total)) : 'PDF';
       }
       if (pageImg){
         var altTpl = hcT(cfg.pageAltKey) || ('Página {n} del catálogo ' + cfg.brandName);
@@ -1908,7 +2056,19 @@ function hcT(key){
 
     function renderPage(pageNum){
       var total = getTotalPages();
-      if (!total) return;
+      if (!total) {
+        var activeCfg = getActiveConfig();
+        if (activeCfg && (activeCfg.pdfUrl || activeCfg.fallbackPdfPath)) {
+          if (stage) stage.classList.remove('is-loading');
+          [prevBtn, nextBtn].forEach(function(b){ if (b) b.style.display = 'none'; });
+          if (pageControlsEl) pageControlsEl.style.display = 'none';
+          showPdfFallback(1);
+          updateViewerCopy();
+        }
+        return;
+      }
+      [prevBtn, nextBtn].forEach(function(b){ if (b) b.style.display = ''; });
+      if (pageControlsEl) pageControlsEl.style.display = '';
       if (pageNum < 1) pageNum = 1;
       if (pageNum > total) pageNum = total;
       pageByCatalog[activeCatalogKey] = pageNum;
@@ -2073,8 +2233,13 @@ function hcT(key){
       applyCatalogThemeAndMeta(activeCatalogKey);
       updateViewerCopy();
     };
+    function openServicioTecnicoModal(triggerEl){
+      openCatalogModal('servicio-tecnico', triggerEl);
+    }
+
     window.openVetcareCatalogModal = openVetcareModal;
     window.openMedicodontCatalogModal = openMedicodontModal;
+    window.openServicioTecnicoCatalogModal = openServicioTecnicoModal;
     window.openCatalogModal = openCatalogModal;
     window.closeVetcareCatalogModal = closeVetcareModal;
     window.refreshVetcareCatalogUI = function(){
@@ -2175,7 +2340,7 @@ function hcT(key){
     var trampaCatalogo = document.getElementById('catalogo_web');
     if (trampaCatalogo && trampaCatalogo.value.trim() !== ''){ return; }
     var emailField = document.getElementById('footerCatalogEmail');
-    var email = emailField ? emailField.value.trim() : '';
+    var email = emailField ? hcSanitizeText(emailField.value, 160, false) : '';
     var isValidEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
     if (!isValidEmail){
       if (emailField){
@@ -2188,6 +2353,7 @@ function hcT(key){
       }
       return;
     }
+    if (!hcCanSubmit('footerCatalog', 5000)) return;
     guardarEnGoogleSheets(email);
     var subject = encodeURIComponent('Solicitud de catálogo — HC GROUP');
     var body = encodeURIComponent('Hola, me gustaría solicitar el catálogo de equipos médicos y soluciones de HC GROUP.\nMi correo de contacto es: ' + email + '.\nQuedo atento/a, gracias.');
@@ -2263,7 +2429,7 @@ function hcT(key){
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 19,
         detectRetina: true,
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>'
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a>'
       }).addTo(hcMap);
       // Pin propio en SVG (autocontenido): evita depender del ícono por defecto de Leaflet,
       // cuya ruta de imagen relativa puede no resolver bien según el CDN y se ve roto.
@@ -2379,13 +2545,14 @@ function hcT(key){
   if (popForm){
     popForm.addEventListener('submit', function(e){
       e.preventDefault();
-      var email = popForm.email.value.trim();
+      var email = hcSanitizeText(popForm.email ? popForm.email.value : '', 160, false);
       if (!isEmail(email)){
         popMsg.className = 'pop-msg';
         popMsg.style.color = '#ffd9d9';
         popMsg.textContent = hcT('pop_invalid_email') || 'Escribe un correo válido.';
         return;
       }
+      if (!hcCanSubmit('popNewsletter', 5000)) return;
       var popSubmitBtn = popForm.querySelector('button[type="submit"]');
       if (popSubmitBtn) popSubmitBtn.disabled = true;
       popMsg.style.color = '';
@@ -2454,28 +2621,31 @@ function hcT(key){
       var reviewText = r.textKey ? hcT(r.textKey) : r.text;
       var replyText = r.replyKey ? hcT(r.replyKey) : r.reply;
       var initial = esc((r.name || 'A')[0].toUpperCase());
-      var avatar = r.photo
-        ? '<div class="rc-avatar"><img src="' + esc(r.photo) + '" alt=""  /></div>'
+      var safePhoto = hcSanitizeImageSrc(r.photo, true);
+      var avatar = safePhoto
+        ? '<div class="rc-avatar"><img src="' + esc(safePhoto) + '" alt="" /></div>'
         : '<div class="rc-avatar">' + initial + '</div>';
       var brandLogo = document.querySelector(".site-header .brand img");
-      var logoSrc = brandLogo ? brandLogo.src : "";
-      var replyIconHtml = logoSrc 
-        ? '<img src="' + logoSrc + '" alt="HC GROUP" style="width: 100%; height: 100%; object-fit: contain; border-radius: 50%; background: #fff;" />'
+      var safeLogoSrc = hcSanitizeImageSrc(brandLogo ? brandLogo.src : "", false);
+      var replyIconHtml = safeLogoSrc
+        ? '<img src="' + esc(safeLogoSrc) + '" alt="HC GROUP" style="width: 100%; height: 100%; object-fit: contain; border-radius: 50%; background: #fff;" />'
         : '<svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>';
 
       var reply = replyText ? (
         '<div class="rc-reply">' +
-          '<div class="rc-reply-icon" style="' + (logoSrc ? 'background: transparent; border: 1px solid #e2e8f0;' : '') + '">' + replyIconHtml + '</div>' +
+          '<div class="rc-reply-icon" style="' + (safeLogoSrc ? 'background: transparent; border: 1px solid #e2e8f0;' : '') + '">' + replyIconHtml + '</div>' +
           '<div class="rc-reply-body"><strong>HC GROUP</strong><p>' + esc(replyText) + '</p></div>' +
         '</div>'
       ) : '';
       var verified = r.verified ? (
-        '<span class="rc-verified"><svg viewBox="0 0 24 24"><path d="M12 2l2.4 2.1 3.1-.5 1 3 2.9 1.3-1 3 1 3-2.9 1.3-1 3-3.1-.5L12 22l-2.4-2.1-3.1.5-1-3L2.6 15.5l1-3-1-3 2.9-1.3 1-3 3.1.5z" fill="currentColor" stroke="none"/><path d="M8.5 12l2.2 2.2 4.3-4.3" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>' + hcT('review_verified') + '</span>'
+        '<span class="rc-verified"><svg viewBox="0 0 24 24"><path d="M12 2l2.4 2.1 3.1-.5 1 3 2.9 1.3-1 3 1 3-2.9 1.3-1 3-3.1-.5L12 22l-2.4-2.1-3.1.5-1-3L2.6 15.5l1-3-1-3 2.9-1.3 1-3 3.1.5z" fill="currentColor" stroke="none"/><path d="M8.5 12l2.2 2.2 4.3-4.3" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>' + esc(hcT('review_verified')) + '</span>'
       ) : '';
+      var safeRating = Math.min(5, Math.max(1, parseInt(r.rating, 10) || 5));
+      var safeHideLabel = esc(hcT('review_hide_aria'));
       return '<article class="review-card">' +
-        '<button type="button" class="rc-hide" data-hide-idx="' + idx + '" aria-label="' + hcT('review_hide_aria') + '" title="' + hcT('review_hide_aria') + '">&times;</button>' +
+        '<button type="button" class="rc-hide" data-hide-idx="' + idx + '" aria-label="' + safeHideLabel + '" title="' + safeHideLabel + '">&times;</button>' +
         '<div class="rc-quote-mark">&#8220;</div>' +
-        '<div class="rc-stars">' + starsRow(r.rating) + '</div>' +
+        '<div class="rc-stars">' + starsRow(safeRating) + '</div>' +
         '<p class="rc-text">' + esc(reviewText) + '</p>' +
         '<div class="rc-author">' + avatar +
           '<div class="rc-meta">' +
@@ -2501,7 +2671,7 @@ function hcT(key){
     });
 
     // resumen: promedio + conteo
-    var avg = Math.round(reviews.reduce(function(a,r){ return a + r.rating; }, 0) / reviews.length);
+    var avg = Math.round(reviews.reduce(function(a,r){ return a + Math.min(5, Math.max(1, parseInt(r.rating, 10) || 5)); }, 0) / reviews.length);
     var avgStars = document.getElementById('avgStars');
     var countBtn = document.getElementById('reviewsCount');
     if (avgStars) avgStars.innerHTML = starsRow(avg);
@@ -2671,16 +2841,26 @@ function hcT(key){
 
     rvPhotoInput.addEventListener('change', function() {
       var file = rvPhotoInput.files && rvPhotoInput.files[0];
-      if (file) {
-        var reader = new FileReader();
-        reader.onload = function(e) {
-          photoBase64Data = e.target.result;
-          if (rvPhotoImg) rvPhotoImg.src = photoBase64Data;
-          if (rvPhotoSelectBtn) rvPhotoSelectBtn.style.display = 'none';
-          if (rvPhotoPreview) rvPhotoPreview.style.display = 'flex';
-        };
-        reader.readAsDataURL(file);
+      if (!file) return;
+      var allowedMime = /^image\/(png|jpeg|jpg|webp|gif)$/i;
+      if (!allowedMime.test(file.type || '') || file.size > 2 * 1024 * 1024) {
+        limpiarFotoResena();
+        return;
       }
+      var reader = new FileReader();
+      reader.onload = function(e) {
+        var result = e && e.target ? e.target.result : '';
+        var safeResult = hcSanitizeImageSrc(result, true);
+        if (!safeResult) {
+          limpiarFotoResena();
+          return;
+        }
+        photoBase64Data = safeResult;
+        if (rvPhotoImg) rvPhotoImg.src = photoBase64Data;
+        if (rvPhotoSelectBtn) rvPhotoSelectBtn.style.display = 'none';
+        if (rvPhotoPreview) rvPhotoPreview.style.display = 'flex';
+      };
+      reader.readAsDataURL(file);
     });
   }
 
@@ -2701,9 +2881,10 @@ function hcT(key){
       // Anti-spam: si el campo trampa está lleno, lo envió un bot -> ignorar en silencio
       var trampaResena = document.getElementById('resena_web');
       if (trampaResena && trampaResena.value.trim() !== ''){ return; }
-      var name = document.getElementById('rvName').value.trim();
-      var text = document.getElementById('rvText').value.trim();
+      var name = hcSanitizeText(document.getElementById('rvName').value, 100, false);
+      var text = hcSanitizeText(document.getElementById('rvText').value, 1200, true);
       if (!name || !text) return;
+      if (!hcCanSubmit('reviewForm', 5000)) return;
 
       // Mostramos el paso de "enviando" de inmediato, y lo dejamos
       // como mínimo 3 segundos (pedido explícitamente), aunque el
@@ -2714,7 +2895,9 @@ function hcT(key){
 
       var now = new Date();
       var fecha = now.getDate() + '/' + (now.getMonth()+1) + '/' + now.getFullYear();
-      var nuevaResena = { name: name, date: fecha, rating: pickedRating, text: text, photo: photoBase64Data };
+      var safeRating = Math.min(5, Math.max(1, parseInt(pickedRating, 10) || 5));
+      var safePhoto = hcSanitizeImageSrc(photoBase64Data, true);
+      var nuevaResena = { name: name, date: fecha, rating: safeRating, text: text, photo: safePhoto };
 
       // La guardamos en Google Sheets (pendiente de aprobación); el
       // propio Apps Script decide si queda visible o no en el sitio.
@@ -3307,6 +3490,10 @@ function hcT(key){
       }
       if (unit === 'medicodont' && typeof window.openMedicodontCatalogModal === 'function'){
         window.openMedicodontCatalogModal(card);
+        return;
+      }
+      if (unit === 'servicio-tecnico' && typeof window.openServicioTecnicoCatalogModal === 'function'){
+        window.openServicioTecnicoCatalogModal(card);
         return;
       }
       var sel = document.getElementById('segmento');

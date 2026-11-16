@@ -3876,7 +3876,7 @@ chat-widget-button[is-open] .icon-wrapper svg {
 .aliados-marquee{
   display: flex;
   width: 100%;
-  padding: 12px 0;
+  padding: 14px 0;
   overflow: visible;
 }
 .aliados-marquee + .aliados-marquee{
@@ -3911,8 +3911,8 @@ chat-widget-button[is-open] .icon-wrapper svg {
 .aliado-card{
   position: relative;
   flex: 0 0 230px;
-  height: 78px;
-  padding: 8px 34px;
+  height: 84px;
+  padding: 10px 34px;
   border-radius: 0;
   background: transparent;
   border: none;
@@ -3930,7 +3930,7 @@ chat-widget-button[is-open] .icon-wrapper svg {
   top: 50%;
   transform: translateY(-50%);
   width: 1px;
-  height: 28px;
+  height: 30px;
   background: rgba(15, 23, 42, 0.08);
   pointer-events: none;
 }
@@ -3939,10 +3939,18 @@ chat-widget-button[is-open] .icon-wrapper svg {
   width: auto;
   height: auto;
   max-width: 100%;
-  max-height: 62px;
+  max-height: 60px;
   object-fit: contain;
+  transform: scale(var(--logo-scale, 1));
+  transform-origin: center center;
   transition: transform .35s cubic-bezier(.2,.8,.2,1), opacity .28s ease, filter .28s ease;
 }
+.aliado-card img[src*="Chison-Logo-New"]{ --logo-scale: 2.02; }
+.aliado-card img[src*="ALJA"]{ --logo-scale: 1.52; }
+.aliado-card img[src*="images%20(3)"]{ --logo-scale: 1.26; }
+.aliado-card img[src*="Gemini_Generated_Image"]{ --logo-scale: 0.94; }
+.aliado-card img[src*="ULSA_Logo"]{ --logo-scale: 0.96; }
+.aliado-card img[src*="logo_unica"]{ --logo-scale: 1.02; }
 .aliados-marquee:hover .aliado-card:not(:hover) img{
   opacity: 0.55;
 }

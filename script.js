@@ -909,6 +909,13 @@ function hcT(key){
 
   /* ---------- REPRODUCCIÓN AUTOMÁTICA DEL VIDEO DE PORTADA ---------- */
   var heroVideo = document.getElementById('heroVideo');
+  var heroVideoWrap = document.getElementById('heroVideoWrap');
+
+  function setHeroVideoLoading(isLoading) {
+    if (!heroVideoWrap) return;
+    heroVideoWrap.classList.toggle('is-video-loading', Boolean(isLoading));
+  }
+
   function isHeroVideoSlideActive() {
     if (!heroVideo) return false;
     var slide = heroVideo.closest ? heroVideo.closest('.hero-slide') : null;
@@ -922,12 +929,25 @@ function hcT(key){
       heroVideo.defaultMuted = true;
       heroVideo.volume = 0;
       heroVideo.playsInline = true;
+      heroVideo.autoplay = true;
     } catch(e) {}
+
+    if (heroVideo.readyState >= 2) {
+      setHeroVideoLoading(false);
+    }
+
+    if (heroVideo.networkState === 0) {
+      try { heroVideo.load(); } catch(e) {}
+    }
 
     if (heroVideo.paused) {
       var p = heroVideo.play();
       if (p !== undefined) {
-        p.catch(function() {
+        p.then(function() {
+          if (heroVideo.readyState >= 2) {
+            setHeroVideoLoading(false);
+          }
+        }).catch(function() {
           var unlockOnAction = function() {
             if (heroVideo && heroVideo.paused && isHeroVideoSlideActive()) {
               heroVideo.muted = true;
@@ -950,16 +970,42 @@ function hcT(key){
     heroVideo.defaultMuted = true;
     heroVideo.volume = 0;
     heroVideo.playsInline = true;
+    heroVideo.autoplay = true;
 
-    // Intentar reproducir inmediatamente
+    setHeroVideoLoading(heroVideo.readyState < 2);
+
+    // Iniciar descarga y reproducción inmediatamente al cargar el módulo
     playHeroVideoNow();
 
-    // Reintentar en cuanto el navegador haya cargado suficientes datos
-    heroVideo.addEventListener('loadeddata', playHeroVideoNow, { once: true });
-    heroVideo.addEventListener('canplay', playHeroVideoNow, { once: true });
+    ['loadedmetadata', 'loadeddata', 'canplay', 'canplaythrough', 'playing'].forEach(function(evtName) {
+      heroVideo.addEventListener(evtName, function() {
+        if (heroVideo.readyState >= 2 || evtName === 'playing' || evtName === 'canplay' || evtName === 'loadeddata') {
+          setHeroVideoLoading(false);
+        }
+        if (isHeroVideoSlideActive() && heroVideo.paused && !heroVideo.ended) {
+          playHeroVideoNow();
+        }
+      });
+    });
+
+    heroVideo.addEventListener('waiting', function() {
+      if (heroVideo.readyState < 2) {
+        setHeroVideoLoading(true);
+      }
+    });
+
+    heroVideo.addEventListener('error', function() {
+      setHeroVideoLoading(false);
+    });
 
     document.addEventListener('visibilitychange', function() {
-      if (!document.hidden && heroVideo.paused && isHeroVideoSlideActive()) {
+      if (!document.hidden && heroVideo.paused && !heroVideo.ended && isHeroVideoSlideActive()) {
+        playHeroVideoNow();
+      }
+    });
+
+    window.addEventListener('pageshow', function() {
+      if (heroVideo && heroVideo.paused && !heroVideo.ended && isHeroVideoSlideActive()) {
         playHeroVideoNow();
       }
     });
@@ -981,7 +1027,7 @@ function hcT(key){
     var videoSafetyTimer = null;
     var videoAdvanceLock = false;
     var IMAGE_DURATION = 7000; // 7 segundos para diapositivas con fotos
-    var MAX_VIDEO_STALL_TIME = 7500; // 7.5s de respaldo en video para móviles/conexión lenta
+    var MAX_VIDEO_STALL_TIME = 18000; // Solo actúa si el video falla/no recibe datos durante 18s
 
     function clearImageTimer() {
       if (imageSlideTimer) {
@@ -997,15 +1043,21 @@ function hcT(key){
       }
     }
 
-    function startVideoSafetyTimer() {
+    function startVideoSafetyTimer(customMs) {
       clearVideoSafetyTimer();
-      // En móvil o conexiones lentas, si el video tarda en descargar los 27MB o no inicia,
-      // este timer garantiza que la portada avance fluidamente y nunca se quede congelada / "no carga"
+      // Nunca saltar si el video ya cargó frames o está reproduciendo
+      if (videoEl && (videoEl.readyState >= 2 || (!videoEl.paused && videoEl.currentTime > 0))) {
+        return;
+      }
       videoSafetyTimer = setTimeout(function() {
         if (currentIdx === 0 && !videoAdvanceLock) {
+          if (videoEl && (videoEl.readyState >= 2 || (!videoEl.paused && videoEl.currentTime > 0))) {
+            clearVideoSafetyTimer();
+            return;
+          }
           advanceFromVideo();
         }
-      }, MAX_VIDEO_STALL_TIME);
+      }, typeof customMs === 'number' ? customMs : MAX_VIDEO_STALL_TIME);
     }
 
     function goToSlide(idx) {
@@ -1036,17 +1088,19 @@ function hcT(key){
         videoAdvanceLock = false;
         slideVideo.muted = true;
         slideVideo.defaultMuted = true;
+        slideVideo.volume = 0;
         slideVideo.playsInline = true;
-        startVideoSafetyTimer();
+        if (slideVideo.networkState === 0) {
+          try { slideVideo.load(); } catch (e) {}
+        }
+        setHeroVideoLoading(slideVideo.readyState < 2);
+        if (slideVideo.readyState < 2) {
+          startVideoSafetyTimer();
+        }
         if (prevIdx !== currentIdx || slideVideo.ended || (slideVideo.duration > 0 && slideVideo.currentTime >= (slideVideo.duration - 0.5))) {
           try { slideVideo.currentTime = 0; } catch (e) {}
         }
-        var p = slideVideo.play();
-        if (p !== undefined) {
-          p.catch(function() {
-            playHeroVideoNow();
-          });
-        }
+        playHeroVideoNow();
       } else {
         if (videoEl && !videoEl.paused) {
           videoEl.pause();
@@ -1073,20 +1127,45 @@ function hcT(key){
       videoEl.addEventListener('ended', function() {
         advanceFromVideo();
       });
-      // Verificación de respaldo por si el navegador no dispara 'ended'
+
+      // Cancelar cualquier timer de respaldo en cuanto el video empieza a cargar o reproducirse
+      ['loadeddata', 'canplay', 'playing'].forEach(function(evtName) {
+        videoEl.addEventListener(evtName, function() {
+          clearVideoSafetyTimer();
+        });
+      });
+
+      // Renovar margen mientras sigan llegando bytes durante la descarga inicial
+      videoEl.addEventListener('progress', function() {
+        if (currentIdx === 0 && !videoAdvanceLock && videoEl.readyState < 2 && videoSafetyTimer) {
+          startVideoSafetyTimer();
+        }
+      });
+
+      // Verificación de fin de video por si algún navegador no dispara 'ended'
       videoEl.addEventListener('timeupdate', function() {
-        if (currentIdx !== 0 || videoEl.paused || videoEl.seeking || videoAdvanceLock) return;
-        if (videoEl.duration > 0 && videoEl.currentTime >= (videoEl.duration - 0.25)) {
+        if (currentIdx !== 0 || videoAdvanceLock) return;
+        if (videoEl.currentTime > 0) {
+          clearVideoSafetyTimer();
+          setHeroVideoLoading(false);
+        }
+        if (!videoEl.paused && !videoEl.seeking && videoEl.duration > 0 && videoEl.currentTime >= (videoEl.duration - 0.25)) {
           advanceFromVideo();
         }
       });
-      // Eventos de error o retraso en red móvil (video de 27MB)
+
+      // Eventos de error o retraso severo en red
       videoEl.addEventListener('error', function() {
         clearVideoSafetyTimer();
-        videoSafetyTimer = setTimeout(advanceFromVideo, 3500);
+        videoSafetyTimer = setTimeout(function() {
+          if (currentIdx === 0 && !videoAdvanceLock) {
+            advanceFromVideo();
+          }
+        }, 3500);
       });
+
       videoEl.addEventListener('stalled', function() {
-        if (currentIdx === 0 && !videoAdvanceLock && !videoSafetyTimer) {
+        if (currentIdx === 0 && !videoAdvanceLock && videoEl.readyState < 2 && !videoSafetyTimer) {
           startVideoSafetyTimer();
         }
       });
@@ -1096,7 +1175,7 @@ function hcT(key){
     frame.addEventListener('click', function(e) {
       if (e.target.closest('#heroPrevBtn') || e.target.closest('#heroNextBtn') || e.target.closest('.hero-nav-arrow')) return;
       if (videoEl && currentIdx === 0 && videoEl.paused) {
-        videoEl.play().catch(function(){});
+        playHeroVideoNow();
       }
     });
 
@@ -1137,7 +1216,7 @@ function hcT(key){
         imageSlideTimer = setTimeout(function() {
           goToSlide(currentIdx + 1);
         }, IMAGE_DURATION);
-      } else if (currentIdx === 0 && !videoSafetyTimer) {
+      } else if (currentIdx === 0 && videoEl && videoEl.readyState < 2 && videoEl.paused && !videoSafetyTimer) {
         startVideoSafetyTimer();
       }
     });

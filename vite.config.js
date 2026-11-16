@@ -9,7 +9,9 @@ export default defineConfig({
     strictPort: true,
     allowedHosts: true,
     hmr: process.env.DISABLE_HMR !== 'true',
-    watch: process.env.DISABLE_HMR === 'true' ? null : {}
+    watch: process.env.DISABLE_HMR === 'true' ? null : {
+      ignored: ['**/dist/**', '**/.git/**', '**/imagenes/**', '**/src/assets/**']
+    }
   },
   build: {
     rollupOptions: {

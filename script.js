@@ -707,8 +707,6 @@ function hcT(key){
 
             var initialTeamData = [
         { image: new URL("./imagenes/1.png", import.meta.url).href, name: "Ing. Bayron Andero", role: "Gerente Comercial" },
-        { image: new URL("./imagenes/2.png", import.meta.url).href, name: "Ing. Willie Cuadra", role: "Asesor Comercial" },
-        { image: new URL("./imagenes/3.png", import.meta.url).href, name: "Ing. Joshua Sevilla", role: "Asistente de electromedicina" },
         { image: new URL("./imagenes/4.png", import.meta.url).href, name: "Ing. Joel Nuñez", role: "Responsable de Adquisiciones" },
         { image: new URL("./imagenes/5.png", import.meta.url).href, name: "Lic. Jeriel Gutiérrez", role: "Asesor Comercial" },
         { image: new URL("./imagenes/6.png", import.meta.url).href, name: "Lic. Cristhell Almanza", role: "Asistente administrativo y recepción" },

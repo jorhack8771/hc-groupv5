@@ -167,6 +167,7 @@ function hcNormalizeReviewItem(item){
   var rawRating = parseInt(item.rating, 10);
   var rating = isNaN(rawRating) ? 5 : Math.min(5, Math.max(1, rawRating));
   var photo = hcSanitizeImageSrc(item.photo, true);
+  var video = hcSanitizeImageSrc(item.video, false);
   var clean = {
     name: hcSanitizeText(item.name, 100, false) || 'Cliente HC',
     verified: Boolean(item.verified),
@@ -178,6 +179,7 @@ function hcNormalizeReviewItem(item){
   if (text) clean.text = text;
   if (reply) clean.reply = reply;
   if (photo) clean.photo = photo;
+  if (video) clean.video = video;
   return clean;
 }
 
@@ -389,6 +391,17 @@ window.HC_I18N = {
     review_hide_aria: "Ocultar esta reseña",
     review_verified: "Verificada",
     review_view_aria_prefix: "Ver reseña",
+    reviews_media_badge: "Videos e imágenes de clientes",
+    reviews_media_default_title: "Lo que dicen de nosotros",
+    reviews_media_empty_title: "Lo que dicen de nosotros en video e imagen",
+    reviews_media_empty_desc: "Aquí se mostrarán los videos y fotografías reales de clientes e instituciones que comparten su experiencia con HC GROUP.",
+    reviews_media_share_btn: "Compartir foto con mi reseña",
+    reviews_media_type_video: "hcgroup -latam",
+    reviews_media_type_image: "Imagen",
+    reviews_media_zoom_aria: "Ampliar imagen",
+    reviews_media_prev_aria: "Testimonio anterior",
+    reviews_media_next_aria: "Siguiente testimonio",
+    reviews_media_dot_prefix: "Ver testimonio visual",
     team_badge: "Nuestro Equipo",
     team_title: "Talento humano que impulsa el cambio.",
     role_gerente_comercial: "Gerente Comercial",
@@ -600,6 +613,17 @@ window.HC_I18N = {
     review_hide_aria: "Hide this review",
     review_verified: "Verified",
     review_view_aria_prefix: "View review",
+    reviews_media_badge: "Client videos & photos",
+    reviews_media_default_title: "What people say about us",
+    reviews_media_empty_title: "What clients say in video & photos",
+    reviews_media_empty_desc: "Real videos and photos from clients and healthcare institutions sharing their experience with HC GROUP will appear here.",
+    reviews_media_share_btn: "Share a photo with my review",
+    reviews_media_type_video: "hcgroup -latam",
+    reviews_media_type_image: "Photo",
+    reviews_media_zoom_aria: "Enlarge image",
+    reviews_media_prev_aria: "Previous testimonial",
+    reviews_media_next_aria: "Next testimonial",
+    reviews_media_dot_prefix: "View media testimonial",
     team_badge: "Our Team",
     team_title: "The people driving our progress.",
     role_gerente_comercial: "Commercial Manager",
@@ -898,6 +922,7 @@ function hcT(key){
     if (typeof refreshHeroTypewriter === 'function') refreshHeroTypewriter();
     // Las reseñas (texto + respuesta de HC GROUP) se vuelven a pintar en el idioma nuevo
     if (typeof renderReviews === 'function') renderReviews();
+    if (typeof window.hcRefreshTestimonialMedia === 'function') window.hcRefreshTestimonialMedia();
     if (typeof syncMobileMenuAria === 'function') syncMobileMenuAria();
     if (typeof window.refreshVetcareCatalogUI === 'function') window.refreshVetcareCatalogUI();
   }
@@ -2294,13 +2319,18 @@ function hcT(key){
       .then(function(res){ return res.json(); })
       .then(function(data){
         var isOk = data && (data.ok === true || data.success === true);
-        if (!isOk || !Array.isArray(data.resenas) || !data.resenas.length) return;
+        if (!isOk) return;
+        if (Array.isArray(data.testimonios_media) && typeof window.hcSetSheetTestimonialMedia === 'function') {
+          window.hcSetSheetTestimonialMedia(data.testimonios_media);
+        }
+        if (!Array.isArray(data.resenas) || !data.resenas.length) return;
         var cleanReviews = hcNormalizeReviewsList(data.resenas);
         if (!cleanReviews.length) return;
         reviews = cleanReviews;
         saveReviews();
         renderReviews();
         if (typeof rvBuildDots === 'function'){ rvBuildDots(); rvGo(0); }
+        if (typeof window.hcRefreshTestimonialMedia === 'function') window.hcRefreshTestimonialMedia();
       })
       .catch(function(err){
         // Sin conexión con la hoja: nos quedamos con las reseñas locales/de ejemplo
@@ -2709,6 +2739,358 @@ function hcT(key){
       rvFilterToggle.classList.toggle('active', hidden);
     });
   }
+
+  /* ---------- BLOQUE MULTIMEDIA DE TESTIMONIOS (VIDEOS E IMÁGENES) ---------- */
+  // Para agregar testimonios visuales propios, añadir objetos con la forma:
+  // { type: 'video' | 'image', src: 'https://...', poster: 'https://...', title: 'Título' }
+  var TESTIMONIAL_MEDIA_ITEMS = [
+    {
+      type: 'video',
+      src: 'https://egwabbnmscqfqbvjxqqr.supabase.co/storage/v1/object/public/videos%20%20hcgroup/1111(1).mp4',
+      titleKey: 'reviews_media_default_title'
+    }
+  ];
+  var sheetTestimonialMedia = [];
+  var rvMediaTrack = document.getElementById('rvMediaTrack');
+  var rvMediaDots = document.getElementById('rvMediaDots');
+  var rvMediaPrev = document.getElementById('rvMediaPrev');
+  var rvMediaNext = document.getElementById('rvMediaNext');
+  var rvMediaCounter = document.getElementById('rvMediaCounter');
+  var rvMediaCarousel = document.getElementById('rvMediaCarousel');
+  var rvLightbox = document.getElementById('rvMediaLightbox');
+  var rvLightboxImg = document.getElementById('rvLightboxImg');
+  var rvLightboxCaption = document.getElementById('rvLightboxCaption');
+  var rvLightboxClose = document.getElementById('rvLightboxClose');
+  var rvMediaIndex = 0;
+
+  function isVideoUrl_(url){
+    return /\.(mp4|webm|ogg|mov)(\?.*)?$/i.test(url || '');
+  }
+
+  function normalizeMediaEntry_(item){
+    if (!item || typeof item !== 'object') return null;
+    var rawSrc = item.src || item.video || item.photo || item.url || '';
+    var type = item.type === 'video' || (!item.type && (item.video || isVideoUrl_(rawSrc))) ? 'video' : 'image';
+    var safeSrc = hcSanitizeImageSrc(rawSrc, type === 'image');
+    if (!safeSrc) return null;
+    var safePoster = hcSanitizeImageSrc(item.poster || '', false);
+    var resolvedTitle = item.titleKey ? hcT(item.titleKey) : (item.title || item.author || item.name || '');
+    return {
+      type: type,
+      src: safeSrc,
+      poster: safePoster,
+      title: hcSanitizeText(resolvedTitle || hcT('reviews_media_default_title'), 120, false)
+    };
+  }
+
+  function getActiveMediaItems_(){
+    var combined = [];
+    var seen = {};
+    function pushUnique(norm){
+      if (!norm || seen[norm.src]) return;
+      seen[norm.src] = true;
+      combined.push(norm);
+    }
+    TESTIMONIAL_MEDIA_ITEMS.forEach(function(item){ pushUnique(normalizeMediaEntry_(item)); });
+    sheetTestimonialMedia.forEach(function(item){ pushUnique(normalizeMediaEntry_(item)); });
+    if (Array.isArray(reviews)) {
+      reviews.forEach(function(r){
+        if (r && r.video) {
+          pushUnique(normalizeMediaEntry_({ type: 'video', src: r.video, poster: r.photo || '', title: r.name }));
+        }
+      });
+    }
+    return combined;
+  }
+
+  function openMediaLightbox_(src, title){
+    if (!rvLightbox || !rvLightboxImg) return;
+    rvLightboxImg.src = src;
+    rvLightboxImg.alt = title || '';
+    if (rvLightboxCaption) rvLightboxCaption.textContent = title || '';
+    rvLightbox.hidden = false;
+  }
+
+  function closeMediaLightbox_(){
+    if (!rvLightbox) return;
+    rvLightbox.hidden = true;
+    if (rvLightboxImg) rvLightboxImg.src = '';
+  }
+
+  if (rvLightboxClose) rvLightboxClose.addEventListener('click', closeMediaLightbox_);
+  if (rvLightbox) {
+    rvLightbox.addEventListener('click', function(e){
+      if (e.target === rvLightbox) closeMediaLightbox_();
+    });
+    document.addEventListener('keydown', function(e){
+      if (e.key === 'Escape' && !rvLightbox.hidden) closeMediaLightbox_();
+    });
+  }
+
+  function isTestimonialCardVisible_(){
+    if (!rvMediaCarousel) return true;
+    var rect = rvMediaCarousel.getBoundingClientRect();
+    return rect.bottom > 0 && rect.top < (window.innerHeight || document.documentElement.clientHeight);
+  }
+
+  function pauseAllTestimonialVideos_(){
+    if (!rvMediaTrack) return;
+    rvMediaTrack.querySelectorAll('video').forEach(function(v){
+      try {
+        v.dataset.systemPause = '1';
+        if (!v.paused) v.pause();
+      } catch(e){}
+      setTimeout(function(){ delete v.dataset.systemPause; }, 0);
+    });
+  }
+
+  function playTestimonialVideo_(videoEl){
+    if (!videoEl || videoEl.dataset.userPaused === '1') return;
+    try {
+      if (!videoEl.dataset.userUnmuted) {
+        videoEl.muted = true;
+        videoEl.defaultMuted = true;
+      }
+      videoEl.playsInline = true;
+      videoEl.autoplay = true;
+      videoEl.loop = true;
+    } catch(e){}
+
+    if (videoEl.networkState === 0) {
+      try { videoEl.load(); } catch(e){}
+    }
+
+    if (videoEl.paused) {
+      var p = videoEl.play();
+      if (p !== undefined) {
+        p.catch(function(){
+          var unlockOnAction = function(){
+            if (videoEl && document.body.contains(videoEl) && videoEl.paused && videoEl.dataset.userPaused !== '1') {
+              var slideIdx = parseInt(videoEl.getAttribute('data-slide-idx') || '0', 10);
+              if (slideIdx === rvMediaIndex) {
+                if (!videoEl.dataset.userUnmuted) videoEl.muted = true;
+                videoEl.play().catch(function(){});
+              }
+            }
+            ['touchstart', 'touchend', 'click', 'scroll', 'pointerdown'].forEach(function(ev){
+              window.removeEventListener(ev, unlockOnAction, { capture: true });
+            });
+          };
+          ['touchstart', 'touchend', 'click', 'scroll', 'pointerdown'].forEach(function(ev){
+            window.addEventListener(ev, unlockOnAction, { capture: true, passive: true, once: true });
+          });
+        });
+      }
+    }
+  }
+
+  function playActiveTestimonialVideo_(){
+    if (!rvMediaTrack) return;
+    var slides = rvMediaTrack.querySelectorAll('.rv-media-slide');
+    var activeSlide = slides[rvMediaIndex];
+    if (!activeSlide) return;
+    var activeVideo = activeSlide.querySelector('video.rv-media-video');
+    if (activeVideo) playTestimonialVideo_(activeVideo);
+  }
+
+  function bindTestimonialVideoAutoplay_(videoEl, slideIdx){
+    if (!videoEl) return;
+    videoEl.setAttribute('data-slide-idx', String(slideIdx));
+    videoEl.muted = true;
+    videoEl.defaultMuted = true;
+    videoEl.playsInline = true;
+    videoEl.autoplay = true;
+    videoEl.loop = true;
+
+    ['loadedmetadata', 'loadeddata', 'canplay', 'canplaythrough', 'playing'].forEach(function(evtName){
+      videoEl.addEventListener(evtName, function(){
+        if (slideIdx === rvMediaIndex && videoEl.paused && !videoEl.ended && videoEl.dataset.userPaused !== '1') {
+          playTestimonialVideo_(videoEl);
+        }
+      });
+    });
+
+    videoEl.addEventListener('play', function(){
+      delete videoEl.dataset.userPaused;
+    });
+
+    videoEl.addEventListener('pause', function(){
+      if (!videoEl.dataset.systemPause && !videoEl.ended && !document.hidden && videoEl.currentTime > 0.15) {
+        videoEl.dataset.userPaused = '1';
+      }
+    });
+
+    videoEl.addEventListener('volumechange', function(){
+      if (!videoEl.muted) {
+        videoEl.dataset.userUnmuted = '1';
+      }
+    });
+
+    if (slideIdx === rvMediaIndex) {
+      playTestimonialVideo_(videoEl);
+    }
+  }
+
+  function goTestimonialMedia(n){
+    if (!rvMediaTrack) return;
+    var slides = rvMediaTrack.querySelectorAll('.rv-media-slide');
+    if (!slides.length) return;
+    pauseAllTestimonialVideos_();
+    rvMediaIndex = ((n % slides.length) + slides.length) % slides.length;
+    rvMediaTrack.style.transform = 'translateX(' + (-rvMediaIndex * 100) + '%)';
+    if (rvMediaCounter) {
+      rvMediaCounter.textContent = (rvMediaIndex + 1) + ' / ' + slides.length;
+    }
+    if (rvMediaDots) {
+      rvMediaDots.querySelectorAll('button').forEach(function(d, k){ d.classList.toggle('on', k === rvMediaIndex); });
+    }
+    var targetVideo = slides[rvMediaIndex] ? slides[rvMediaIndex].querySelector('video.rv-media-video') : null;
+    if (targetVideo) {
+      delete targetVideo.dataset.userPaused;
+      playTestimonialVideo_(targetVideo);
+    }
+  }
+
+  function renderTestimonialMedia(){
+    if (!rvMediaTrack) return;
+    var items = getActiveMediaItems_();
+    if (!items.length) {
+      if (rvMediaCounter) rvMediaCounter.hidden = true;
+      if (rvMediaPrev) rvMediaPrev.hidden = true;
+      if (rvMediaNext) rvMediaNext.hidden = true;
+      if (rvMediaDots) { rvMediaDots.hidden = true; rvMediaDots.innerHTML = ''; }
+      rvMediaTrack.style.transform = 'translateX(0)';
+      rvMediaTrack.innerHTML =
+        '<div class="rv-media-slide">' +
+          '<div class="rv-media-empty">' +
+            '<div class="rv-media-empty-ic" aria-hidden="true">' +
+              '<svg viewBox="0 0 24 24"><rect x="2.5" y="4.5" width="19" height="15" rx="3"/><polygon points="10 9.5 15.5 12 10 14.5" fill="currentColor" stroke="none"/></svg>' +
+            '</div>' +
+            '<h3>' + esc(hcT('reviews_media_empty_title')) + '</h3>' +
+            '<p>' + esc(hcT('reviews_media_empty_desc')) + '</p>' +
+            '<button type="button" class="rv-btn" id="rvMediaShareBtn">' + esc(hcT('reviews_media_share_btn')) + '</button>' +
+          '</div>' +
+        '</div>';
+      var shareBtn = document.getElementById('rvMediaShareBtn');
+      if (shareBtn) {
+        shareBtn.addEventListener('click', function(){
+          if (typeof abrirModalResena === 'function') abrirModalResena();
+        });
+      }
+      return;
+    }
+
+    rvMediaTrack.innerHTML = items.map(function(item, idx){
+      var badgeLabel = item.type === 'video' ? hcT('reviews_media_type_video') : hcT('reviews_media_type_image');
+      var mediaEl = item.type === 'video'
+        ? '<video class="rv-media-video" src="' + esc(item.src) + '" controls autoplay muted loop playsinline webkit-playsinline preload="auto"' + (item.poster ? ' poster="' + esc(item.poster) + '"' : '') + '><source src="' + esc(item.src) + '" type="video/mp4" /></video>'
+        : '<img class="rv-media-img" src="' + esc(item.src) + '" alt="' + esc(item.title || badgeLabel) + '" loading="lazy" decoding="async" />' +
+          '<button type="button" class="rv-media-zoom" data-media-zoom="' + idx + '" aria-label="' + esc(hcT('reviews_media_zoom_aria')) + '">' +
+            '<svg viewBox="0 0 24 24"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>' +
+          '</button>';
+      var captionBlock = item.title
+        ? '<div class="rv-media-caption"><strong>' + esc(item.title) + '</strong></div>'
+        : '';
+      return '<div class="rv-media-slide">' +
+        '<div class="rv-media-frame">' +
+          mediaEl +
+        '</div>' +
+        captionBlock +
+      '</div>';
+    }).join('');
+
+    rvMediaTrack.querySelectorAll('.rv-media-slide').forEach(function(slideEl, idx){
+      var vid = slideEl.querySelector('video.rv-media-video');
+      if (vid) bindTestimonialVideoAutoplay_(vid, idx);
+    });
+
+    rvMediaTrack.querySelectorAll('[data-media-zoom]').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        var idx = parseInt(btn.getAttribute('data-media-zoom'), 10);
+        var target = items[idx];
+        if (target) openMediaLightbox_(target.src, target.title);
+      });
+    });
+    rvMediaTrack.querySelectorAll('.rv-media-img').forEach(function(img, idx){
+      img.addEventListener('click', function(){
+        var target = items[idx];
+        if (target) openMediaLightbox_(target.src, target.title);
+      });
+    });
+
+    var hasMulti = items.length > 1;
+    if (rvMediaCounter) rvMediaCounter.hidden = !hasMulti;
+    if (rvMediaPrev) rvMediaPrev.hidden = !hasMulti;
+    if (rvMediaNext) rvMediaNext.hidden = !hasMulti;
+    if (rvMediaDots) {
+      rvMediaDots.innerHTML = '';
+      rvMediaDots.hidden = !hasMulti;
+      if (hasMulti) {
+        items.forEach(function(_, k){
+          var b = document.createElement('button');
+          b.type = 'button';
+          b.className = 'car-dot';
+          b.setAttribute('aria-label', hcT('reviews_media_dot_prefix') + ' ' + (k + 1));
+          b.addEventListener('click', function(){ goTestimonialMedia(k); });
+          rvMediaDots.appendChild(b);
+        });
+      }
+    }
+    goTestimonialMedia(0);
+  }
+
+  if (rvMediaPrev) rvMediaPrev.addEventListener('click', function(){ goTestimonialMedia(rvMediaIndex - 1); });
+  if (rvMediaNext) rvMediaNext.addEventListener('click', function(){ goTestimonialMedia(rvMediaIndex + 1); });
+
+  document.addEventListener('visibilitychange', function(){
+    if (!document.hidden && isTestimonialCardVisible_()) {
+      playActiveTestimonialVideo_();
+    }
+  });
+  window.addEventListener('pageshow', function(){
+    if (isTestimonialCardVisible_()) {
+      playActiveTestimonialVideo_();
+    }
+  });
+  if (rvMediaCarousel && typeof IntersectionObserver === 'function') {
+    var rvMediaObserver = new IntersectionObserver(function(entries){
+      entries.forEach(function(entry){
+        if (entry.isIntersecting) {
+          playActiveTestimonialVideo_();
+        }
+      });
+    }, { threshold: 0.15 });
+    rvMediaObserver.observe(rvMediaCarousel);
+  }
+
+  if (rvMediaCarousel) {
+    var mediaVp = rvMediaCarousel.querySelector('.rv-media-viewport');
+    if (mediaVp) {
+      var mx = 0, mdx = 0, mmoved = false;
+      mediaVp.addEventListener('touchstart', function(e){
+        mx = e.touches[0].clientX; mdx = 0; mmoved = false;
+        if (rvMediaTrack) rvMediaTrack.style.transition = 'none';
+      }, { passive: true });
+      mediaVp.addEventListener('touchmove', function(e){
+        mdx = e.touches[0].clientX - mx;
+        if (Math.abs(mdx) > 10) mmoved = true;
+      }, { passive: true });
+      mediaVp.addEventListener('touchend', function(){
+        if (rvMediaTrack) rvMediaTrack.style.transition = '';
+        if (mmoved) {
+          if (mdx < -40) goTestimonialMedia(rvMediaIndex + 1);
+          else if (mdx > 40) goTestimonialMedia(rvMediaIndex - 1);
+        }
+      });
+    }
+  }
+
+  window.hcSetSheetTestimonialMedia = function(list){
+    sheetTestimonialMedia = Array.isArray(list) ? list : [];
+    renderTestimonialMedia();
+  };
+  window.hcRefreshTestimonialMedia = renderTestimonialMedia;
+  renderTestimonialMedia();
 
   // Selector de estrellas del formulario
   var pickedRating = 5;

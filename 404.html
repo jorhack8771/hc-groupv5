@@ -23,10 +23,12 @@
 <meta name="twitter:image" content="https://latamhcgroup.ai.studio/og-image.png?v=5" />
 <link rel="dns-prefetch" href="https://egwabbnmscqfqbvjxqqr.supabase.co" />
 <link rel="preconnect" href="https://egwabbnmscqfqbvjxqqr.supabase.co" />
+<link rel="preconnect" href="https://cdn.builderbot.cloud" crossorigin />
+<link rel="preload" as="image" href="./imagenes/avatar.webp" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700;800;900&family=Plus+Jakarta+Sans:wght@600;700;800&family=Poppins:wght@500;600;700;800&family=Source+Sans+3:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" integrity="sha512-h9FcoyWjHcOcmEVkxOfTLnmZFWIH0iZhZT1H2TbOq55xssQGEJHEaIm+PgoUaZbRvQTNTluNOEfb1ZRy6D3BOw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+<link id="leafletCssLink" rel="stylesheet" media="print" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" integrity="sha512-h9FcoyWjHcOcmEVkxOfTLnmZFWIH0iZhZT1H2TbOq55xssQGEJHEaIm+PgoUaZbRvQTNTluNOEfb1ZRy6D3BOw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
 
 <link rel="stylesheet" href="./style.css" />
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js" integrity="sha512-puJW3E/qXDqYp9IfhAI54BJEaWIfloJ7JWs7OeD5i6ruC9JZL1gERT1wjtwXFlh7CjE7ZJ+/vcRZRkIYIb6p4g==" crossorigin="anonymous" referrerpolicy="no-referrer" defer></script>
@@ -203,7 +205,7 @@
               <video
                 id="heroVideo"
                 class="hero-media-video"
-                src="https://egwabbnmscqfqbvjxqqr.supabase.co/storage/v1/object/public/videos%20%20hcgroup/1111(1).mp4"
+                src="./imagenes/hc-video.mp4"
                 autoplay
                 muted
                 playsinline
@@ -211,7 +213,7 @@
                 preload="auto"
                 fetchpriority="high"
                 aria-label="HC Group - Video institucional">
-                <source src="https://egwabbnmscqfqbvjxqqr.supabase.co/storage/v1/object/public/videos%20%20hcgroup/1111(1).mp4" type="video/mp4" />
+                <source src="./imagenes/hc-video.mp4" type="video/mp4" />
                 <img src="./imagenes/portada-hero.png" alt="HC Group - Tecnología médica" class="hero-media-img" width="851" height="315" />
               </video>
               <div class="hero-video-loader" aria-hidden="true">

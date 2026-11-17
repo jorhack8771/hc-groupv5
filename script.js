@@ -1022,6 +1022,19 @@ function hcT(key){
       }
     });
 
+    var heroStallRetries = 0;
+    heroVideo.addEventListener('stalled', function() {
+      if (heroStallRetries < 2 && heroVideo.readyState < 2 && isHeroVideoSlideActive()) {
+        heroStallRetries++;
+        setTimeout(function() {
+          if (heroVideo && heroVideo.readyState < 2 && isHeroVideoSlideActive()) {
+            try { heroVideo.load(); } catch(e) {}
+            playHeroVideoNow();
+          }
+        }, 1600);
+      }
+    });
+
     heroVideo.addEventListener('error', function() {
       setHeroVideoLoading(false);
     });
@@ -1125,7 +1138,7 @@ function hcT(key){
         if (slideVideo.readyState < 2) {
           startVideoSafetyTimer();
         }
-        if (prevIdx !== currentIdx || slideVideo.ended || (slideVideo.duration > 0 && slideVideo.currentTime >= (slideVideo.duration - 0.5))) {
+        if (slideVideo.readyState >= 1 && (prevIdx !== currentIdx || slideVideo.ended || (slideVideo.duration > 0 && slideVideo.currentTime >= (slideVideo.duration - 0.5)))) {
           try { slideVideo.currentTime = 0; } catch (e) {}
         }
         playHeroVideoNow();
@@ -2415,6 +2428,8 @@ function hcT(key){
 
   /* ---------- MAPA DE UBICACIÓN (Leaflet + OpenStreetMap) ---------- */
   function initLeafletMap(){
+    var leafletCss = document.getElementById('leafletCssLink');
+    if (leafletCss && leafletCss.media !== 'all') leafletCss.media = 'all';
     var mapEl = document.getElementById('hcMap');
     if (!mapEl || !window.L || mapEl._leaflet_id) return false;
     try {
@@ -2746,7 +2761,7 @@ function hcT(key){
   var TESTIMONIAL_MEDIA_ITEMS = [
     {
       type: 'video',
-      src: 'https://egwabbnmscqfqbvjxqqr.supabase.co/storage/v1/object/public/videos%20%20hcgroup/1111(1).mp4',
+      src: new URL("./imagenes/hc-video.mp4", import.meta.url).href,
       titleKey: 'reviews_media_default_title'
     }
   ];
@@ -2844,9 +2859,31 @@ function hcT(key){
     });
   }
 
+  function isHeroVideoBlocking_(){
+    return Boolean(heroVideo && heroVideo.readyState < 2 && isHeroVideoSlideActive() && !isTestimonialCardVisible_());
+  }
+
+  function resolveTestimonialVideoSrc_(rawUrl){
+    if (!rawUrl) return rawUrl;
+    var heroSrc = heroVideo ? (heroVideo.currentSrc || heroVideo.getAttribute('src') || '') : '';
+    if (!heroSrc) return rawUrl;
+    var sameSource = rawUrl === heroSrc;
+    if (!sameSource) {
+      try {
+        sameSource = new URL(rawUrl, window.location.href).href === new URL(heroSrc, window.location.href).href;
+      } catch(e) {}
+    }
+    if (sameSource) {
+      return rawUrl + (rawUrl.indexOf('?') === -1 ? '?rv=1' : '&rv=1');
+    }
+    return rawUrl;
+  }
+
   function playTestimonialVideo_(videoEl){
     if (!videoEl || videoEl.dataset.userPaused === '1') return;
+    if (isHeroVideoBlocking_()) return;
     try {
+      if (videoEl.preload !== 'auto') videoEl.preload = 'auto';
       if (!videoEl.dataset.userUnmuted) {
         videoEl.muted = true;
         videoEl.defaultMuted = true;
@@ -2926,7 +2963,7 @@ function hcT(key){
       }
     });
 
-    if (slideIdx === rvMediaIndex) {
+    if (slideIdx === rvMediaIndex && !isHeroVideoBlocking_()) {
       playTestimonialVideo_(videoEl);
     }
   }
@@ -2982,8 +3019,9 @@ function hcT(key){
 
     rvMediaTrack.innerHTML = items.map(function(item, idx){
       var badgeLabel = item.type === 'video' ? hcT('reviews_media_type_video') : hcT('reviews_media_type_image');
+      var resolvedVideoSrc = item.type === 'video' ? resolveTestimonialVideoSrc_(item.src) : item.src;
       var mediaEl = item.type === 'video'
-        ? '<video class="rv-media-video" src="' + esc(item.src) + '" controls autoplay muted loop playsinline webkit-playsinline preload="auto"' + (item.poster ? ' poster="' + esc(item.poster) + '"' : '') + '><source src="' + esc(item.src) + '" type="video/mp4" /></video>'
+        ? '<video class="rv-media-video" src="' + esc(resolvedVideoSrc) + '" controls muted loop playsinline webkit-playsinline preload="metadata"' + (item.poster ? ' poster="' + esc(item.poster) + '"' : '') + '><source src="' + esc(resolvedVideoSrc) + '" type="video/mp4" /></video>'
         : '<img class="rv-media-img" src="' + esc(item.src) + '" alt="' + esc(item.title || badgeLabel) + '" loading="lazy" decoding="async" />' +
           '<button type="button" class="rv-media-zoom" data-media-zoom="' + idx + '" aria-label="' + esc(hcT('reviews_media_zoom_aria')) + '">' +
             '<svg viewBox="0 0 24 24"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>' +
@@ -3052,6 +3090,16 @@ function hcT(key){
       playActiveTestimonialVideo_();
     }
   });
+  if (heroVideo) {
+    ['canplay', 'playing'].forEach(function(evtName){
+      heroVideo.addEventListener(evtName, function(){
+        playActiveTestimonialVideo_();
+      }, { once: true });
+    });
+  }
+  setTimeout(function(){
+    playActiveTestimonialVideo_();
+  }, 2200);
   if (rvMediaCarousel && typeof IntersectionObserver === 'function') {
     var rvMediaObserver = new IntersectionObserver(function(entries){
       entries.forEach(function(entry){
@@ -3059,7 +3107,7 @@ function hcT(key){
           playActiveTestimonialVideo_();
         }
       });
-    }, { threshold: 0.15 });
+    }, { rootMargin: '250px 0px', threshold: 0.01 });
     rvMediaObserver.observe(rvMediaCarousel);
   }
 
@@ -3406,7 +3454,12 @@ function hcT(key){
    - 100% responsive en móvil (375px, 390px, 414px)
    ============================================================ */
 (function initBuilderBotResponsive() {
-  var AVATAR_IMG_URL = new URL("./imagenes/avatar.png", import.meta.url).href;
+  var AVATAR_IMG_URL = new URL("./imagenes/avatar.webp", import.meta.url).href;
+  try {
+    var prewarmAvatar = new Image();
+    prewarmAvatar.decoding = 'async';
+    prewarmAvatar.src = AVATAR_IMG_URL;
+  } catch (e) {}
 
   function injectStatusStylesIntoRoot(root) {
     if (!root || !root.querySelector) return;
@@ -3597,6 +3650,8 @@ function hcT(key){
         launcherImg.className = 'builderbot-launcher-avatar';
         launcherImg.src = AVATAR_IMG_URL;
         launcherImg.alt = 'Avatar Asistente HC Group';
+        launcherImg.decoding = 'async';
+        launcherImg.fetchPriority = 'high';
         launcherImg.style.position = 'absolute';
         launcherImg.style.top = '0';
         launcherImg.style.left = '0';
@@ -3734,6 +3789,11 @@ function hcT(key){
         }
       });
     }
+  }
+
+  var builderBotScript = document.querySelector('script[data-builderbot-chat]');
+  if (builderBotScript) {
+    builderBotScript.addEventListener('load', scheduleAdjust, { once: true });
   }
 
   setTimeout(adjustBuilderBotElements, 100);

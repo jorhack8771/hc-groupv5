@@ -722,7 +722,10 @@ function hcT(key){
         { image: new URL("./imagenes/16.png", import.meta.url).href, name: "Ing. Natividad Picado R.", role: "Ingeniero Supervisor/Campo" },
         { image: new URL("./imagenes/17.png", import.meta.url).href, name: "Dr. Wilber Matamoro", role: "CEO HC Group" },
         { image: new URL("./imagenes/18.png", import.meta.url).href, name: "Lic. Ana Moya", role: "Recursos Humanos" },
-        { image: new URL("./imagenes/19.png", import.meta.url).href, name: "Dra. Grethel Olivas", role: "Asesora Aplicacionista" }
+        { image: new URL("./imagenes/19.png", import.meta.url).href, name: "Dra. Grethel Olivas", role: "Asesora Aplicacionista" },
+        { image: "https://egwabbnmscqfqbvjxqqr.supabase.co/storage/v1/object/public/videos%20%20hcgroup/Copia%20de%20FOTOS%20HC%20GROUP%20(17).jpg.jpeg", name: "Lic. Maykeling Ruiz", role: "Asistente de Adquisiciones y Licitaciones" },
+        { image: "https://egwabbnmscqfqbvjxqqr.supabase.co/storage/v1/object/public/videos%20%20hcgroup/Copia%20de%20FOTOS%20HC%20GROUP%20(18).jpg.jpeg", name: "Lic. Frederick Hernández", role: "Asesor Comercial Técnico" },
+        { image: "https://egwabbnmscqfqbvjxqqr.supabase.co/storage/v1/object/public/videos%20%20hcgroup/Copia%20de%20FOTOS%20HC%20GROUP%20(20).jpg.jpeg", name: "Lic. Kenia Duarte", role: "Regencia" }
       ];
 
       // Eliminar duplicados en base al nombre y rol

@@ -422,6 +422,10 @@ html.mobile-menu-open .site-header{ z-index:10020; transition:transform .25s eas
 .rv-media-prev{ left:-12px; top:42%; }
 .rv-media-next{ right:-12px; top:42%; }
 .rv-media-dots{ margin-top:14px; }
+.rv-media-dots:not([hidden]){ display:flex !important; justify-content:center; align-items:center; gap:10px; }
+.rv-media-dots .car-dot{ width:9px; height:9px; background:rgba(255,255,255,.38); }
+.rv-media-dots .car-dot:hover{ background:rgba(255,255,255,.72); }
+.rv-media-dots .car-dot.on{ background:#fff; transform:scale(1.22); }
 .rv-media-empty{ flex:1; width:100%; min-height:240px; border-radius:14px; border:1.5px dashed rgba(255,255,255,.32); background:rgba(255,255,255,.1); display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:26px 22px; gap:10px; }
 .rv-media-empty-ic{ width:52px; height:52px; border-radius:14px; background:rgba(255,255,255,.14); border:1px solid rgba(255,255,255,.24); box-shadow:0 4px 12px rgba(4,20,38,.18); display:grid; place-items:center; color:#fff; margin-bottom:4px; }
 .rv-media-empty-ic svg{ width:26px; height:26px; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }

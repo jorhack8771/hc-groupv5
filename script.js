@@ -1016,26 +1016,45 @@ function hcT(key){
       });
     });
 
+    var heroWaitTimer = null;
     heroVideo.addEventListener('waiting', function() {
       if (heroVideo.readyState < 2) {
         setHeroVideoLoading(true);
+      }
+      if (!heroWaitTimer && isHeroVideoSlideActive()) {
+        heroWaitTimer = setTimeout(function() {
+          heroWaitTimer = null;
+          if (heroVideo && heroVideo.readyState < 3 && isHeroVideoSlideActive() && !heroVideo.paused) {
+            playHeroVideoNow();
+          }
+        }, 1800);
       }
     });
 
     var heroStallRetries = 0;
     heroVideo.addEventListener('stalled', function() {
-      if (heroStallRetries < 2 && heroVideo.readyState < 2 && isHeroVideoSlideActive()) {
+      if (heroStallRetries < 3 && heroVideo.readyState < 2 && isHeroVideoSlideActive()) {
         heroStallRetries++;
         setTimeout(function() {
           if (heroVideo && heroVideo.readyState < 2 && isHeroVideoSlideActive()) {
             try { heroVideo.load(); } catch(e) {}
             playHeroVideoNow();
           }
-        }, 1600);
+        }, 1000 * heroStallRetries);
       }
     });
 
     heroVideo.addEventListener('error', function() {
+      if (heroStallRetries < 2 && isHeroVideoSlideActive()) {
+        heroStallRetries++;
+        setTimeout(function() {
+          if (heroVideo && isHeroVideoSlideActive()) {
+            try { heroVideo.load(); } catch(e) {}
+            playHeroVideoNow();
+          }
+        }, 1000 * heroStallRetries);
+        return;
+      }
       setHeroVideoLoading(false);
     });
 
@@ -2761,7 +2780,14 @@ function hcT(key){
   var TESTIMONIAL_MEDIA_ITEMS = [
     {
       type: 'video',
-      src: new URL("./imagenes/hc-video.mp4", import.meta.url).href,
+      src: new URL("./imagenes/hc-video-testimonio.mp4", import.meta.url).href,
+      poster: new URL("./imagenes/hc-video-testimonio-poster.webp", import.meta.url).href,
+      titleKey: 'reviews_media_default_title'
+    },
+    {
+      type: 'video',
+      src: new URL("./imagenes/hc-video-testimonio-2.mp4", import.meta.url).href,
+      poster: new URL("./imagenes/hc-video-testimonio-2-poster.webp", import.meta.url).href,
       titleKey: 'reviews_media_default_title'
     }
   ];
@@ -2842,10 +2868,12 @@ function hcT(key){
     });
   }
 
-  function isTestimonialCardVisible_(){
+  function isTestimonialCardVisible_(marginPx){
     if (!rvMediaCarousel) return true;
+    var margin = typeof marginPx === 'number' ? marginPx : 0;
     var rect = rvMediaCarousel.getBoundingClientRect();
-    return rect.bottom > 0 && rect.top < (window.innerHeight || document.documentElement.clientHeight);
+    var vh = window.innerHeight || document.documentElement.clientHeight;
+    return rect.bottom > -margin && rect.top < (vh + margin);
   }
 
   function pauseAllTestimonialVideos_(){
@@ -2860,7 +2888,7 @@ function hcT(key){
   }
 
   function isHeroVideoBlocking_(){
-    return Boolean(heroVideo && heroVideo.readyState < 2 && isHeroVideoSlideActive() && !isTestimonialCardVisible_());
+    return Boolean(heroVideo && heroVideo.readyState < 2 && isHeroVideoSlideActive() && !isTestimonialCardVisible_(450));
   }
 
   function resolveTestimonialVideoSrc_(rawUrl){
@@ -2879,21 +2907,33 @@ function hcT(key){
     return rawUrl;
   }
 
-  function playTestimonialVideo_(videoEl){
-    if (!videoEl || videoEl.dataset.userPaused === '1') return;
-    if (isHeroVideoBlocking_()) return;
+  function applyMobileVideoAttrs_(videoEl){
+    if (!videoEl) return;
     try {
-      if (videoEl.preload !== 'auto') videoEl.preload = 'auto';
       if (!videoEl.dataset.userUnmuted) {
         videoEl.muted = true;
         videoEl.defaultMuted = true;
+        videoEl.setAttribute('muted', '');
       }
       videoEl.playsInline = true;
       videoEl.autoplay = true;
       videoEl.loop = true;
+      videoEl.setAttribute('playsinline', '');
+      videoEl.setAttribute('webkit-playsinline', '');
+      videoEl.setAttribute('autoplay', '');
+    } catch(e){}
+  }
+
+  function playTestimonialVideo_(videoEl, forceLoad){
+    if (!videoEl || videoEl.dataset.userPaused === '1') return;
+    if (!forceLoad && isHeroVideoBlocking_()) return;
+    applyMobileVideoAttrs_(videoEl);
+    try {
+      if (videoEl.preload !== 'auto') videoEl.preload = 'auto';
     } catch(e){}
 
-    if (videoEl.networkState === 0) {
+    if (videoEl.networkState === 0 || (videoEl.networkState === 3 && !videoEl.dataset.reloaded)) {
+      videoEl.dataset.reloaded = '1';
       try { videoEl.load(); } catch(e){}
     }
 
@@ -2901,19 +2941,23 @@ function hcT(key){
       var p = videoEl.play();
       if (p !== undefined) {
         p.catch(function(){
+          if (videoEl.dataset.unlockBound === '1') return;
+          videoEl.dataset.unlockBound = '1';
+          var events = ['touchstart', 'touchend', 'click', 'scroll', 'pointerdown'];
           var unlockOnAction = function(){
             if (videoEl && document.body.contains(videoEl) && videoEl.paused && videoEl.dataset.userPaused !== '1') {
               var slideIdx = parseInt(videoEl.getAttribute('data-slide-idx') || '0', 10);
               if (slideIdx === rvMediaIndex) {
-                if (!videoEl.dataset.userUnmuted) videoEl.muted = true;
+                applyMobileVideoAttrs_(videoEl);
                 videoEl.play().catch(function(){});
               }
             }
-            ['touchstart', 'touchend', 'click', 'scroll', 'pointerdown'].forEach(function(ev){
+            delete videoEl.dataset.unlockBound;
+            events.forEach(function(ev){
               window.removeEventListener(ev, unlockOnAction, { capture: true });
             });
           };
-          ['touchstart', 'touchend', 'click', 'scroll', 'pointerdown'].forEach(function(ev){
+          events.forEach(function(ev){
             window.addEventListener(ev, unlockOnAction, { capture: true, passive: true, once: true });
           });
         });
@@ -2921,34 +2965,53 @@ function hcT(key){
     }
   }
 
-  function playActiveTestimonialVideo_(){
+  function playActiveTestimonialVideo_(forceLoad){
     if (!rvMediaTrack) return;
     var slides = rvMediaTrack.querySelectorAll('.rv-media-slide');
     var activeSlide = slides[rvMediaIndex];
     if (!activeSlide) return;
     var activeVideo = activeSlide.querySelector('video.rv-media-video');
-    if (activeVideo) playTestimonialVideo_(activeVideo);
+    if (activeVideo) playTestimonialVideo_(activeVideo, forceLoad);
   }
 
   function bindTestimonialVideoAutoplay_(videoEl, slideIdx){
     if (!videoEl) return;
     videoEl.setAttribute('data-slide-idx', String(slideIdx));
-    videoEl.muted = true;
-    videoEl.defaultMuted = true;
-    videoEl.playsInline = true;
-    videoEl.autoplay = true;
-    videoEl.loop = true;
+    applyMobileVideoAttrs_(videoEl);
+
+    var retryCount = 0;
+    function scheduleRetry(){
+      if (retryCount >= 3 || slideIdx !== rvMediaIndex || videoEl.readyState >= 2 || videoEl.dataset.userPaused === '1') return;
+      retryCount++;
+      setTimeout(function(){
+        if (document.body.contains(videoEl) && slideIdx === rvMediaIndex && videoEl.readyState < 2 && videoEl.dataset.userPaused !== '1') {
+          try { videoEl.load(); } catch(e){}
+          playTestimonialVideo_(videoEl, true);
+        }
+      }, retryCount * 800);
+    }
 
     ['loadedmetadata', 'loadeddata', 'canplay', 'canplaythrough', 'playing'].forEach(function(evtName){
       videoEl.addEventListener(evtName, function(){
+        if (evtName === 'canplay' || evtName === 'playing') retryCount = 0;
+        if (evtName === 'canplaythrough' && slideIdx === 0 && rvMediaTrack) {
+          var nextSlideVid = rvMediaTrack.querySelector('.rv-media-slide:nth-child(2) video.rv-media-video');
+          if (nextSlideVid && nextSlideVid.preload !== 'auto') {
+            nextSlideVid.preload = 'auto';
+          }
+        }
         if (slideIdx === rvMediaIndex && videoEl.paused && !videoEl.ended && videoEl.dataset.userPaused !== '1') {
-          playTestimonialVideo_(videoEl);
+          playTestimonialVideo_(videoEl, true);
         }
       });
     });
 
+    videoEl.addEventListener('stalled', scheduleRetry);
+    videoEl.addEventListener('error', scheduleRetry);
+
     videoEl.addEventListener('play', function(){
       delete videoEl.dataset.userPaused;
+      delete videoEl.dataset.unlockBound;
     });
 
     videoEl.addEventListener('pause', function(){
@@ -2964,7 +3027,7 @@ function hcT(key){
     });
 
     if (slideIdx === rvMediaIndex && !isHeroVideoBlocking_()) {
-      playTestimonialVideo_(videoEl);
+      playTestimonialVideo_(videoEl, true);
     }
   }
 
@@ -3021,7 +3084,7 @@ function hcT(key){
       var badgeLabel = item.type === 'video' ? hcT('reviews_media_type_video') : hcT('reviews_media_type_image');
       var resolvedVideoSrc = item.type === 'video' ? resolveTestimonialVideoSrc_(item.src) : item.src;
       var mediaEl = item.type === 'video'
-        ? '<video class="rv-media-video" src="' + esc(resolvedVideoSrc) + '" controls muted loop playsinline webkit-playsinline preload="metadata"' + (item.poster ? ' poster="' + esc(item.poster) + '"' : '') + '><source src="' + esc(resolvedVideoSrc) + '" type="video/mp4" /></video>'
+        ? '<video class="rv-media-video" src="' + esc(resolvedVideoSrc) + '" autoplay controls muted loop playsinline webkit-playsinline preload="' + (idx === 0 ? 'auto' : 'metadata') + '"' + (item.poster ? ' poster="' + esc(item.poster) + '"' : '') + '><source src="' + esc(resolvedVideoSrc) + '" type="video/mp4" /></video>'
         : '<img class="rv-media-img" src="' + esc(item.src) + '" alt="' + esc(item.title || badgeLabel) + '" loading="lazy" decoding="async" />' +
           '<button type="button" class="rv-media-zoom" data-media-zoom="' + idx + '" aria-label="' + esc(hcT('reviews_media_zoom_aria')) + '">' +
             '<svg viewBox="0 0 24 24"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>' +
@@ -3081,34 +3144,43 @@ function hcT(key){
   if (rvMediaNext) rvMediaNext.addEventListener('click', function(){ goTestimonialMedia(rvMediaIndex + 1); });
 
   document.addEventListener('visibilitychange', function(){
-    if (!document.hidden && isTestimonialCardVisible_()) {
-      playActiveTestimonialVideo_();
+    if (!document.hidden && isTestimonialCardVisible_(200)) {
+      playActiveTestimonialVideo_(true);
     }
   });
   window.addEventListener('pageshow', function(){
-    if (isTestimonialCardVisible_()) {
-      playActiveTestimonialVideo_();
+    if (isTestimonialCardVisible_(200)) {
+      playActiveTestimonialVideo_(true);
     }
   });
   if (heroVideo) {
     ['canplay', 'playing'].forEach(function(evtName){
       heroVideo.addEventListener(evtName, function(){
-        playActiveTestimonialVideo_();
+        playActiveTestimonialVideo_(true);
       }, { once: true });
     });
   }
   setTimeout(function(){
-    playActiveTestimonialVideo_();
-  }, 2200);
+    playActiveTestimonialVideo_(true);
+  }, 1200);
   if (rvMediaCarousel && typeof IntersectionObserver === 'function') {
-    var rvMediaObserver = new IntersectionObserver(function(entries){
+    var rvMediaPrewarmObserver = new IntersectionObserver(function(entries){
       entries.forEach(function(entry){
         if (entry.isIntersecting) {
-          playActiveTestimonialVideo_();
+          playActiveTestimonialVideo_(true);
         }
       });
-    }, { rootMargin: '250px 0px', threshold: 0.01 });
-    rvMediaObserver.observe(rvMediaCarousel);
+    }, { rootMargin: '500px 0px', threshold: 0.01 });
+    rvMediaPrewarmObserver.observe(rvMediaCarousel);
+
+    var rvMediaPlayObserver = new IntersectionObserver(function(entries){
+      entries.forEach(function(entry){
+        if (entry.isIntersecting) {
+          playActiveTestimonialVideo_(true);
+        }
+      });
+    }, { threshold: 0.08 });
+    rvMediaPlayObserver.observe(rvMediaCarousel);
   }
 
   if (rvMediaCarousel) {

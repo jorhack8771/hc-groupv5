@@ -193,26 +193,88 @@ function hcNormalizeReviewsList(list){
   return out;
 }
 
+function hcNormalizeTeamImageUrl_(rawUrl){
+  var safe = hcSanitizeImageSrc(rawUrl, false);
+  if (!safe) return '';
+  var m = safe.match(/^https?:\/\/drive\.google\.com\/(?:file\/d\/|open\?id=|uc\?(?:[^#]*&)?id=)([A-Za-z0-9_-]{10,})/i);
+  if (m && m[1]) {
+    return 'https://drive.google.com/thumbnail?id=' + encodeURIComponent(m[1]) + '&sz=w1000';
+  }
+  return safe;
+}
+
 function hcNormalizeTeamItem(item){
   if (!item || typeof item !== 'object' || Array.isArray(item)) return null;
-  var name = hcSanitizeText(item.name, 120, false);
+  var name = hcSanitizeText(item.name || item.nombre, 120, false);
   if (!name) return null;
+  var rawPhoto = item.photo || item.imagen || item.foto || item.image || item.url || '';
   return {
     id: hcSanitizeText(item.id == null ? '' : String(item.id), 64, false),
     name: name,
-    role: hcSanitizeText(item.role, 120, false),
-    photo: hcSanitizeImageSrc(item.photo, false)
+    role: hcSanitizeText(item.role || item.cargo || item.puesto, 120, false),
+    photo: hcNormalizeTeamImageUrl_(rawPhoto)
   };
 }
 
 function hcNormalizeTeamList(list){
   if (!Array.isArray(list)) return [];
   var out = [];
-  for (var idx = 0; idx < list.length && out.length < 50; idx++){
+  for (var idx = 0; idx < list.length && out.length < 100; idx++){
     var norm = hcNormalizeTeamItem(list[idx]);
     if (norm) out.push(norm);
   }
   return out;
+}
+
+/* Controlador compartido: detiene el automático al detectar uso manual y lo reanuda tras 10s sin movimiento */
+function hcCreateCarouselIdleController(opts){
+  var idleMs = (opts && opts.idleMs) || 10000;
+  var onPause = opts && opts.onPause;
+  var onResume = opts && opts.onResume;
+  var idleTimer = null;
+  var isManual = false;
+  var explicitManual = false;
+
+  function clearIdleTimer(){
+    if (idleTimer) {
+      clearTimeout(idleTimer);
+      idleTimer = null;
+    }
+  }
+
+  function trigger(isHoverOnly){
+    if (!isHoverOnly) explicitManual = true;
+    isManual = true;
+    if (typeof onPause === 'function') onPause();
+    clearIdleTimer();
+    idleTimer = setTimeout(function(){
+      idleTimer = null;
+      isManual = false;
+      explicitManual = false;
+      if (typeof onResume === 'function') onResume();
+    }, idleMs);
+  }
+
+  function notifyLeave(){
+    if (!explicitManual) {
+      clearIdleTimer();
+      isManual = false;
+      if (typeof onResume === 'function') onResume();
+    }
+  }
+
+  function cancel(){
+    clearIdleTimer();
+    isManual = false;
+    explicitManual = false;
+  }
+
+  return {
+    trigger: trigger,
+    notifyLeave: notifyLeave,
+    cancel: cancel,
+    isManual: function(){ return isManual; }
+  };
 }
 
 /* ---------- 0. CONTROL DE INICIO DESDE ARRIBA (SCROLL TO TOP GARANTIZADO) ---------- */
@@ -782,7 +844,7 @@ function hcT(key){
             var b = document.createElement('button');
             b.type='button'; b.className='car-dot';
             b.setAttribute('aria-label','Integrantes ' + (k+1));
-            b.addEventListener('click', function(){ go(k); restart(); });
+            b.addEventListener('click', function(){ teamIdle.trigger(false); go(k); });
             dotsBox.appendChild(b);
           })(k);
         }
@@ -800,7 +862,11 @@ function hcT(key){
       }
       function start(){ if(!timer) timer = setInterval(function(){ go(i+1); }, DELAY); }
       function stop(){ clearInterval(timer); timer = null; }
-      function restart(){ stop(); start(); }
+      var teamIdle = hcCreateCarouselIdleController({
+        idleMs: 10000,
+        onPause: stop,
+        onResume: function(){ start(); }
+      });
 
       function refrescarTarjetas(){
         cards = Array.prototype.slice.call(track.children);
@@ -814,40 +880,136 @@ function hcT(key){
         return d.innerHTML;
       }
       function tarjetaEquipoHTML(miembro){
-        var safePhoto = hcSanitizeImageSrc(miembro.photo, false);
+        var safePhoto = hcNormalizeTeamImageUrl_(miembro.photo);
         var fotoSrc = safePhoto ? escaparHTML_(safePhoto) : '';
-        
-        // Fallback robusto usando onerror y manejando el caso sin foto
+        var initial = escaparHTML_((miembro.name || '?').charAt(0).toUpperCase());
+        var altText = escaparHTML_(miembro.name + (miembro.role ? ' — ' + miembro.role : ''));
+
         var fotoHTML = fotoSrc
-          ? '<img src="' + fotoSrc + '" alt="' + escaparHTML_(miembro.name) + '" style="width: 100%; height: auto; object-fit: contain;" draggable="false">'
-          : '<div class="team-photo-fallback" style="display:flex;align-items:center;justify-content:center;background:#0E70B6;color:#fff;width:100%;height:100%;font-size:3rem;font-weight:700;">' + escaparHTML_((miembro.name || '?').charAt(0).toUpperCase()) + '</div>';
-        
-        return '<figure class="team-card" data-id="' + escaparHTML_(String(miembro.id == null ? '' : miembro.id)) + '">' +
+          ? '<img src="' + fotoSrc + '" alt="' + altText + '" loading="lazy" decoding="async" draggable="false">'
+          : '<div class="team-photo-fallback">' + initial + '</div>';
+
+        return '<figure class="team-card" data-id="' + escaparHTML_(String(miembro.id == null ? '' : miembro.id)) + '" data-initial="' + initial + '">' +
           '<div class="card-img">' + fotoHTML + '</div>' +
           '<figcaption class="meta"><strong>' + escaparHTML_(miembro.name) + '</strong><span>' + escaparHTML_(miembro.role) + '</span></figcaption>' +
         '</figure>';
       }
 
-      window.hcRenderEquipoDesdeSheets = function(miembros){
+      function bindTeamImageFallbacks_(){
+        track.querySelectorAll('.team-card .card-img img').forEach(function(img){
+          img.addEventListener('error', function(){
+            var card = img.closest ? img.closest('.team-card') : null;
+            var box = img.parentElement;
+            if (!box) return;
+            var ch = (card && card.getAttribute('data-initial')) || '?';
+            box.innerHTML = '<div class="team-photo-fallback"></div>';
+            box.firstElementChild.textContent = ch;
+          }, { once: true });
+        });
+      }
+
+      function mergeTeamKeepingOrder_(baseList, extraList){
+        var merged = baseList.map(function(m){
+          return { id: m.id, name: m.name, role: m.role, photo: m.photo };
+        });
+        var indexByKey = {};
+        merged.forEach(function(m, idx){
+          var k = String(m.name || '').trim().toLowerCase();
+          if (k && !(k in indexByKey)) indexByKey[k] = idx;
+        });
+        extraList.forEach(function(item){
+          var k = String(item.name || '').trim().toLowerCase();
+          if (!k) return;
+          if (k in indexByKey) {
+            var target = merged[indexByKey[k]];
+            if (item.photo) target.photo = item.photo;
+            if (item.role) target.role = item.role;
+          } else {
+            indexByKey[k] = merged.length;
+            merged.push({
+              id: item.id || String(merged.length + 1),
+              name: item.name,
+              role: item.role,
+              photo: item.photo
+            });
+          }
+        });
+        return merged;
+      }
+
+      function renderEquipo_(miembros){
         var cleanTeam = hcNormalizeTeamList(miembros);
         if (!cleanTeam.length) return;
         track.innerHTML = cleanTeam.map(tarjetaEquipoHTML).join('');
+        bindTeamImageFallbacks_();
         refrescarTarjetas();
+      }
+
+      window.hcRenderEquipoDesdeSheets = function(miembros){
+        var cleanExtra = hcNormalizeTeamList(miembros);
+        if (!cleanExtra.length) return;
+        var merged = mergeTeamKeepingOrder_(uniqueTeam, cleanExtra);
+        renderEquipo_(merged);
       };
 
-      // Inicializar con la data local filtrada
-      window.hcRenderEquipoDesdeSheets(uniqueTeam);
+      window.hcFocusTeamMember = function(target){
+        if (!cards || !cards.length) return false;
+        var norm = function(s){
+          return String(s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+        };
+        var idx = -1;
+        if (typeof target === 'number') {
+          idx = target;
+        } else {
+          var q = norm(target);
+          for (var c = 0; c < cards.length; c++) {
+            var nameEl = cards[c].querySelector('.meta strong');
+            var roleEl = cards[c].querySelector('.meta span');
+            var hay = norm((nameEl ? nameEl.textContent : '') + ' ' + (roleEl ? roleEl.textContent : ''));
+            if (q && hay.indexOf(q) !== -1) { idx = c; break; }
+          }
+        }
+        if (idx < 0 || idx >= cards.length) return false;
+        var maxPage = Math.max(0, pages() - 1);
+        var targetPage = Math.min(idx, maxPage);
+        go(targetPage);
+        teamIdle.trigger(false);
+        var card = cards[idx];
+        if (card) {
+          cards.forEach(function(el){ el.classList.remove('is-search-hit'); });
+          card.classList.add('is-search-hit');
+          setTimeout(function(){ card.classList.remove('is-search-hit'); }, 2200);
+        }
+        return true;
+      };
 
-      car.querySelector('[data-team-prev]').addEventListener('click', function(){ go(i-1); restart(); });
-      car.querySelector('[data-team-next]').addEventListener('click', function(){ go(i+1); restart(); });
-      car.addEventListener('mouseenter', stop);
-      car.addEventListener('mouseleave', start);
+      // Inicializar con los colaboradores definidos en el código manteniendo su orden
+      renderEquipo_(uniqueTeam);
+
+      var lastTeamMove = 0;
+      car.querySelector('[data-team-prev]').addEventListener('click', function(){ teamIdle.trigger(false); go(i-1); });
+      car.querySelector('[data-team-next]').addEventListener('click', function(){ teamIdle.trigger(false); go(i+1); });
+      car.addEventListener('pointerdown', function(){ teamIdle.trigger(false); }, { passive: true });
+      car.addEventListener('mouseenter', function(){ teamIdle.trigger(true); });
+      car.addEventListener('mousemove', function(){
+        var now = Date.now();
+        if (now - lastTeamMove > 400) {
+          lastTeamMove = now;
+          teamIdle.trigger(true);
+        }
+      }, { passive: true });
+      car.addEventListener('mouseleave', function(){ teamIdle.notifyLeave(); });
+      car.addEventListener('keydown', function(e){
+        if (e.key === 'ArrowLeft') { teamIdle.trigger(false); go(i-1); }
+        else if (e.key === 'ArrowRight') { teamIdle.trigger(false); go(i+1); }
+      });
       window.addEventListener('resize', function(){ buildDots(); go(i); });
 
       var vp = car.querySelector('.team-viewport');
       var tsx=0, tdx=0, tmoved=false;
-      vp.addEventListener('touchstart', function(e){ stop(); tsx=e.touches[0].clientX; tdx=0; tmoved=false; track.style.transition='none'; }, {passive:true});
+      vp.addEventListener('touchstart', function(e){ teamIdle.trigger(false); tsx=e.touches[0].clientX; tdx=0; tmoved=false; track.style.transition='none'; }, {passive:true});
       vp.addEventListener('touchmove', function(e){ 
+        teamIdle.trigger(false);
         tdx=e.touches[0].clientX - tsx; 
         if(Math.abs(tdx)>10) tmoved=true; 
         if(tmoved && cards.length > 0){
@@ -861,9 +1023,9 @@ function hcT(key){
         if(tmoved){ 
           if(tdx<-40){ go(i+1); } else if(tdx>40){ go(i-1); } else { go(i); } 
         } 
-        start(); 
+        teamIdle.trigger(false);
       });
-      vp.addEventListener('touchcancel', function(){ track.style.transition=''; go(i); start(); });
+      vp.addEventListener('touchcancel', function(){ track.style.transition=''; go(i); teamIdle.trigger(false); });
 
       start();
     })();
@@ -1116,12 +1278,13 @@ function hcT(key){
 
     function startVideoSafetyTimer(customMs) {
       clearVideoSafetyTimer();
+      if (heroIdle.isManual()) return;
       // Nunca saltar si el video ya cargó frames o está reproduciendo
       if (videoEl && (videoEl.readyState >= 2 || (!videoEl.paused && videoEl.currentTime > 0))) {
         return;
       }
       videoSafetyTimer = setTimeout(function() {
-        if (currentIdx === 0 && !videoAdvanceLock) {
+        if (currentIdx === 0 && !videoAdvanceLock && !heroIdle.isManual()) {
           if (videoEl && (videoEl.readyState >= 2 || (!videoEl.paused && videoEl.currentTime > 0))) {
             clearVideoSafetyTimer();
             return;
@@ -1131,7 +1294,27 @@ function hcT(key){
       }, typeof customMs === 'number' ? customMs : MAX_VIDEO_STALL_TIME);
     }
 
-    function goToSlide(idx) {
+    var heroIdle = hcCreateCarouselIdleController({
+      idleMs: 10000,
+      onPause: function(){
+        clearImageTimer();
+        clearVideoSafetyTimer();
+      },
+      onResume: function(){
+        if (currentIdx === 0) {
+          if (videoEl && (videoEl.ended || (videoEl.duration > 0 && videoEl.currentTime >= (videoEl.duration - 0.3)))) {
+            advanceFromVideo();
+          } else if (videoEl && videoEl.paused) {
+            playHeroVideoNow();
+            if (videoEl.readyState < 2) startVideoSafetyTimer();
+          }
+        } else {
+          goToSlide(currentIdx + 1, false);
+        }
+      }
+    });
+
+    function goToSlide(idx, fromManual) {
       clearImageTimer();
       clearVideoSafetyTimer();
       var prevIdx = currentIdx;
@@ -1165,7 +1348,7 @@ function hcT(key){
           try { slideVideo.load(); } catch (e) {}
         }
         setHeroVideoLoading(slideVideo.readyState < 2);
-        if (slideVideo.readyState < 2) {
+        if (slideVideo.readyState < 2 && !fromManual && !heroIdle.isManual()) {
           startVideoSafetyTimer();
         }
         if (slideVideo.readyState >= 1 && (prevIdx !== currentIdx || slideVideo.ended || (slideVideo.duration > 0 && slideVideo.currentTime >= (slideVideo.duration - 0.5)))) {
@@ -1176,21 +1359,23 @@ function hcT(key){
         if (videoEl && !videoEl.paused) {
           videoEl.pause();
         }
-        // Diapositiva con imagen: mostrar durante 7 segundos y luego volver al video
-        imageSlideTimer = setTimeout(function() {
-          goToSlide(currentIdx + 1);
-        }, IMAGE_DURATION);
+        // Diapositiva con imagen: esperar antes de volver al video solo si no está en control manual
+        if (!fromManual && !heroIdle.isManual()) {
+          imageSlideTimer = setTimeout(function() {
+            goToSlide(currentIdx + 1, false);
+          }, IMAGE_DURATION);
+        }
       }
     }
 
     function advanceFromVideo() {
-      if (currentIdx !== 0 || videoAdvanceLock) return;
+      if (currentIdx !== 0 || videoAdvanceLock || heroIdle.isManual()) return;
       videoAdvanceLock = true;
       clearVideoSafetyTimer();
       if (videoEl && !videoEl.paused) {
         videoEl.pause();
       }
-      goToSlide(currentIdx + 1);
+      goToSlide(currentIdx + 1, false);
     }
 
     // Escuchar el evento 'ended' del video: cuando termina, pasa a la siguiente diapositiva
@@ -1253,14 +1438,16 @@ function hcT(key){
     if (prevBtn) {
       prevBtn.addEventListener('click', function(e) {
         e.preventDefault();
-        goToSlide(currentIdx - 1);
+        heroIdle.trigger(false);
+        goToSlide(currentIdx - 1, true);
       });
     }
 
     if (nextBtn) {
       nextBtn.addEventListener('click', function(e) {
         e.preventDefault();
-        goToSlide(currentIdx + 1);
+        heroIdle.trigger(false);
+        goToSlide(currentIdx + 1, true);
       });
     }
 
@@ -1269,47 +1456,50 @@ function hcT(key){
         e.preventDefault();
         var target = parseInt(dot.getAttribute('data-slide-to'), 10);
         if (!isNaN(target)) {
-          goToSlide(target);
+          heroIdle.trigger(false);
+          goToSlide(target, true);
         }
       });
     });
 
-    frame.addEventListener('mouseenter', function() {
-      if (currentIdx !== 0) {
-        clearImageTimer();
-      } else {
-        clearVideoSafetyTimer();
+    frame.addEventListener('pointerdown', function(e) {
+      if (e.target.closest('.hero-nav-arrow') || e.target.closest('.hero-dot')) {
+        heroIdle.trigger(false);
       }
+    }, { passive: true });
+
+    frame.addEventListener('mouseenter', function() {
+      heroIdle.trigger(true);
     });
 
     frame.addEventListener('mouseleave', function() {
-      if (currentIdx !== 0 && !imageSlideTimer) {
-        imageSlideTimer = setTimeout(function() {
-          goToSlide(currentIdx + 1);
-        }, IMAGE_DURATION);
-      } else if (currentIdx === 0 && videoEl && videoEl.readyState < 2 && videoEl.paused && !videoSafetyTimer) {
-        startVideoSafetyTimer();
-      }
+      heroIdle.notifyLeave();
     });
 
     // Soporte para gestos táctiles (swipe)
     var touchStartX = 0;
     var touchEndX = 0;
     frame.addEventListener('touchstart', function(e) {
+      heroIdle.trigger(false);
       if (e.changedTouches && e.changedTouches[0]) {
         touchStartX = e.changedTouches[0].screenX;
       }
     }, { passive: true });
 
+    frame.addEventListener('touchmove', function() {
+      heroIdle.trigger(false);
+    }, { passive: true });
+
     frame.addEventListener('touchend', function(e) {
+      heroIdle.trigger(false);
       if (e.changedTouches && e.changedTouches[0]) {
         touchEndX = e.changedTouches[0].screenX;
         var diff = touchStartX - touchEndX;
         if (Math.abs(diff) > 45) {
           if (diff > 0) {
-            goToSlide(currentIdx + 1);
+            goToSlide(currentIdx + 1, true);
           } else {
-            goToSlide(currentIdx - 1);
+            goToSlide(currentIdx - 1, true);
           }
         }
       }
@@ -1318,14 +1508,16 @@ function hcT(key){
     // Navegación por teclado con flechas izquierda y derecha
     frame.addEventListener('keydown', function(e) {
       if (e.key === 'ArrowLeft') {
-        goToSlide(currentIdx - 1);
+        heroIdle.trigger(false);
+        goToSlide(currentIdx - 1, true);
       } else if (e.key === 'ArrowRight') {
-        goToSlide(currentIdx + 1);
+        heroIdle.trigger(false);
+        goToSlide(currentIdx + 1, true);
       }
     });
 
     // Iniciar inmediatamente en la diapositiva del video
-    goToSlide(0);
+    goToSlide(0, false);
   })();
 
   /* ---------- EFECTO "MÁQUINA DE ESCRIBIR" EN "SOLUCIONES INTEGRALES" (H1 del hero) ---------- */
@@ -2537,9 +2729,418 @@ function hcT(key){
     });
   }
 
-  /* ---------- BUSCADOR EN HEADER (ESTILO PROMED) ---------- */
+  /* ---------- BUSCADOR EN HEADER CON SUGERENCIAS INTELIGENTES ---------- */
   var searchToggle = document.getElementById('headerSearchToggle');
   var searchWrap = document.getElementById('headerSearchWrap');
+  var shopSearch = document.getElementById('shopSearch');
+  var searchInput = shopSearch ? shopSearch.querySelector('input[type="search"], input[name="q"]') : null;
+  var searchResultsBox = null;
+  var activeSearchIndex = -1;
+  var currentSuggestions = [];
+
+  if (searchWrap) {
+    searchResultsBox = document.getElementById('headerSearchResults');
+    if (!searchResultsBox) {
+      searchResultsBox = document.createElement('div');
+      searchResultsBox.id = 'headerSearchResults';
+      searchResultsBox.className = 'header-search-results';
+      searchResultsBox.setAttribute('role', 'listbox');
+      searchResultsBox.setAttribute('aria-label', 'Sugerencias de búsqueda');
+      searchWrap.appendChild(searchResultsBox);
+    }
+  }
+
+  function normSearch(str){
+    return String(str || '')
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
+  function closeSearchPanel(){
+    if (!searchWrap) return;
+    searchWrap.classList.remove('is-open');
+    if (searchToggle) searchToggle.setAttribute('aria-expanded', 'false');
+    if (searchResultsBox) searchResultsBox.classList.remove('is-visible');
+    activeSearchIndex = -1;
+  }
+
+  function scrollToSectionClean(targetEl, highlightSelector){
+    if (!targetEl) return;
+    var headerEl = document.querySelector('.site-header');
+    var clearance = headerEl ? Math.max(92, Math.ceil(headerEl.getBoundingClientRect().bottom + 14)) : 108;
+    var topPos = Math.max(0, (window.pageYOffset || document.documentElement.scrollTop || 0) + targetEl.getBoundingClientRect().top - clearance);
+    window.scrollTo({
+      top: topPos,
+      behavior: reduceMotion ? 'auto' : 'smooth'
+    });
+    if (highlightSelector) {
+      var hi = targetEl.querySelector(highlightSelector) || document.querySelector(highlightSelector);
+      if (hi) {
+        hi.classList.add('is-search-hit');
+        setTimeout(function(){ hi.classList.remove('is-search-hit'); }, 2200);
+      }
+    }
+  }
+
+  function getSearchCatalog(){
+    var isEn = window.HC_LANG === 'en';
+    var items = [
+      {
+        id: 'sec-equipo',
+        title: isEn ? 'Our Team' : 'Nuestro Equipo',
+        subtitle: isEn ? 'The people driving our progress' : 'Talento humano que impulsa el cambio',
+        tag: isEn ? 'Section' : 'Sección',
+        keywords: 'equipo nuestro equipo team talento humano personal colaboradores ingenieros asesores empleados staff integrantes',
+        priority: 10,
+        quick: true,
+        action: function(){
+          scrollToSectionClean(document.getElementById('equipo'));
+        }
+      },
+      {
+        id: 'sec-empresas',
+        title: isEn ? 'Group Companies & Catalogs' : 'Empresas del Grupo y Catálogos',
+        subtitle: 'Medicodont, Vetcare, Docens Academy, Servicio Técnico',
+        tag: isEn ? 'Section' : 'Sección',
+        keywords: 'empresas grupo nuestras marcas unidades negocio catalogos medicodont vetcare docens servicio tecnico',
+        priority: 8,
+        quick: true,
+        action: function(){
+          scrollToSectionClean(document.getElementById('empresas'));
+        }
+      },
+      {
+        id: 'unit-medicodont',
+        title: 'Medicodont',
+        subtitle: isEn ? 'Medical equipment, dental & human health catalog' : 'Equipos médicos, odontológicos y catálogo de salud humana',
+        tag: isEn ? 'Catalog' : 'Catálogo',
+        keywords: 'medicodont catalogo medicodont equipos medicos odontologia ultrasonido chison radiologia rayos x ginecologia medicina',
+        priority: 7,
+        quick: false,
+        action: function(){
+          scrollToSectionClean(document.getElementById('empresas'), '.empresa-card--medicodont');
+        }
+      },
+      {
+        id: 'unit-vetcare',
+        title: 'Vetcare',
+        subtitle: isEn ? 'Veterinary medical equipment & catalog' : 'Soluciones y catálogo de equipos médicos veterinarios',
+        tag: isEn ? 'Catalog' : 'Catálogo',
+        keywords: 'vetcare veterinaria catalogo vetcare equipos veterinarios cirugia grooming ultrasonido veterinario animales',
+        priority: 7,
+        quick: false,
+        action: function(){
+          scrollToSectionClean(document.getElementById('empresas'), '.empresa-card--vetcare');
+        }
+      },
+      {
+        id: 'unit-docens',
+        title: 'Docens Academy',
+        subtitle: isEn ? 'Continuing medical education & training' : 'Formación médica continua, cursos y diplomados',
+        tag: isEn ? 'Education' : 'Formación',
+        keywords: 'docens academy educacion continua capacitacion cursos diplomados talleres formacion medica academia',
+        priority: 7,
+        quick: false,
+        action: function(){
+          scrollToSectionClean(document.getElementById('empresas'), '.empresa-card--docens');
+        }
+      },
+      {
+        id: 'unit-servicio',
+        title: isEn ? 'Technical Service' : 'Servicio Técnico',
+        subtitle: isEn ? 'Biomedical engineering, calibration & maintenance catalog' : 'Ingeniería biomédica, mantenimiento certificado y catálogo',
+        tag: isEn ? 'Catalog' : 'Catálogo',
+        keywords: 'servicio tecnico soporte mantenimiento reparacion calibracion ingenieria biomedica repuestos garantia',
+        priority: 7,
+        quick: false,
+        action: function(){
+          scrollToSectionClean(document.getElementById('empresas'), '.empresa-card--servicio');
+        }
+      },
+      {
+        id: 'sec-nosotros',
+        title: isEn ? 'About Us · Our Story' : 'Nosotros · Nuestra historia',
+        subtitle: isEn ? 'Over 10 years of healthcare innovation' : 'Más de 10 años de trayectoria en el sector salud',
+        tag: isEn ? 'Section' : 'Sección',
+        keywords: 'nosotros nuestra historia quienes somos trayectoria experiencia grupo empresarial 2021 origen mision vision',
+        priority: 6,
+        quick: true,
+        action: function(){
+          scrollToSectionClean(document.getElementById('nosotros'));
+        }
+      },
+      {
+        id: 'sec-aliados',
+        title: isEn ? 'Our Allies' : 'Nuestros Aliados',
+        subtitle: isEn ? 'Strategic global manufacturers & academic partners' : 'Alianzas estratégicas con marcas globales e instituciones',
+        tag: isEn ? 'Section' : 'Sección',
+        keywords: 'aliados alianzas fabricantes marcas socios estrategicos chison universidades',
+        priority: 5,
+        quick: false,
+        action: function(){
+          scrollToSectionClean(document.getElementById('aliados'));
+        }
+      },
+      {
+        id: 'sec-resenas',
+        title: isEn ? 'Reviews & Testimonials' : 'Reseñas y Testimonios',
+        subtitle: isEn ? 'Client videos, photos and verified ratings' : 'Videos, fotos y opiniones verificadas de clientes',
+        tag: isEn ? 'Section' : 'Sección',
+        keywords: 'resenas reseñas testimonios opiniones clientes videos fotos comentarios experiencia calificaciones',
+        priority: 6,
+        quick: true,
+        action: function(){
+          scrollToSectionClean(document.getElementById('resenas'));
+        }
+      },
+      {
+        id: 'sec-faq',
+        title: isEn ? 'Frequently Asked Questions (FAQ)' : 'Preguntas Frecuentes (FAQ)',
+        subtitle: isEn ? 'Coverage, warranties, quotes & client portal' : 'Cobertura regional, garantías, cotizaciones y dudas',
+        tag: 'FAQ',
+        keywords: 'faq preguntas frecuentes dudas envios distribucion cobertura panama centroamerica nicaragua garantia cotizacion portal',
+        priority: 6,
+        quick: true,
+        action: function(){
+          scrollToSectionClean(document.getElementById('faq'));
+        }
+      },
+      {
+        id: 'act-boletin',
+        title: isEn ? 'Newsletter & Upcoming Events' : 'Boletín Informativo · Eventos',
+        subtitle: isEn ? 'Subscribe to news, launches & events' : 'Novedades, próximos eventos y lanzamientos',
+        tag: isEn ? 'Events' : 'Eventos',
+        keywords: 'boletin informativo eventos proximos eventos novedades suscribirse noticias lanzamientos',
+        priority: 5,
+        quick: false,
+        action: function(){
+          var popEl = document.getElementById('newsletterPop');
+          if (popEl) {
+            popEl.classList.add('open');
+            popEl.setAttribute('aria-hidden', 'false');
+            var em = popEl.querySelector('input[type="email"]');
+            if (em) setTimeout(function(){ em.focus(); }, 120);
+          }
+        }
+      },
+      {
+        id: 'sec-contacto',
+        title: isEn ? 'Contact · Headquarters' : 'Contacto · Oficina central',
+        subtitle: isEn ? 'Visit us, map, WhatsApp & request form' : 'Visítenos, mapa, formulario de solicitud y WhatsApp',
+        tag: isEn ? 'Section' : 'Sección',
+        keywords: 'contacto visitenos oficina central mapa ubicacion direccion managua sinsa home telefono whatsapp correo formulario cotizar',
+        priority: 5,
+        quick: true,
+        action: function(){
+          scrollToSectionClean(document.getElementById('contacto'));
+        }
+      }
+    ];
+
+    // Indexar integrantes dinámicos del carrusel Nuestro Equipo (código + Google Sheets)
+    var teamCards = document.querySelectorAll('#equipoGrid .team-card');
+    teamCards.forEach(function(card, idx){
+      var nameEl = card.querySelector('.meta strong');
+      var roleEl = card.querySelector('.meta span');
+      var nameTxt = nameEl ? hcSanitizeText(nameEl.textContent, 120, false) : '';
+      var roleTxt = roleEl ? hcSanitizeText(roleEl.textContent, 120, false) : '';
+      if (!nameTxt) return;
+      items.push({
+        id: 'team-' + idx,
+        title: nameTxt,
+        subtitle: (isEn ? 'Our Team' : 'Nuestro Equipo') + (roleTxt ? ' · ' + roleTxt : ''),
+        tag: isEn ? 'Team' : 'Equipo',
+        keywords: 'integrante colaborador miembro ' + nameTxt + ' ' + roleTxt,
+        priority: 4,
+        quick: false,
+        action: function(){
+          scrollToSectionClean(document.getElementById('equipo'));
+          if (typeof window.hcFocusTeamMember === 'function') {
+            setTimeout(function(){ window.hcFocusTeamMember(nameTxt); }, 220);
+          }
+        }
+      });
+    });
+
+    // Indexar preguntas específicas del acordeón FAQ
+    var faqItems = document.querySelectorAll('#faqAccordion [data-faq-item]');
+    faqItems.forEach(function(faqEl, idx){
+      var btn = faqEl.querySelector('.faq-trigger');
+      var qEl = faqEl.querySelector('.faq-question');
+      var ansEl = faqEl.querySelector('.faq-answer-inner');
+      var qTxt = qEl ? hcSanitizeText(qEl.textContent, 160, false) : '';
+      var aTxt = ansEl ? hcSanitizeText(ansEl.textContent, 260, false) : '';
+      if (!qTxt) return;
+      items.push({
+        id: 'faq-' + idx,
+        title: qTxt,
+        subtitle: isEn ? 'Frequently Asked Questions' : 'Preguntas frecuentes',
+        tag: 'FAQ',
+        keywords: qTxt + ' ' + aTxt,
+        priority: 3,
+        quick: false,
+        action: function(){
+          if (btn && btn.getAttribute('aria-expanded') !== 'true') {
+            btn.click();
+          }
+          scrollToSectionClean(faqEl);
+          faqEl.classList.add('is-search-hit');
+          setTimeout(function(){ faqEl.classList.remove('is-search-hit'); }, 2200);
+        }
+      });
+    });
+
+    return items;
+  }
+
+  function scoreSearchItem(item, normQ, tokens){
+    if (!normQ) return item.quick ? (100 + item.priority) : 0;
+    var titleN = normSearch(item.title);
+    var subN = normSearch(item.subtitle);
+    var kwN = normSearch(item.keywords);
+    var combined = titleN + ' ' + subN + ' ' + kwN;
+
+    for (var t = 0; t < tokens.length; t++) {
+      if (combined.indexOf(tokens[t]) === -1) return 0;
+    }
+
+    var score = item.priority;
+    if (titleN === normQ) score += 1000;
+    else if (titleN.indexOf(normQ) === 0) score += 700;
+    else if (new RegExp('(^|\\s)' + normQ.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '(\\s|$)').test(titleN)) score += 620;
+    else if (titleN.indexOf(normQ) !== -1) score += 480;
+
+    if (new RegExp('(^|\\s)' + normQ.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '(\\s|$)').test(kwN)) score += 320;
+    else if (kwN.indexOf(normQ) !== -1) score += 180;
+
+    if (subN.indexOf(normQ) !== -1) score += 150;
+
+    tokens.forEach(function(tk){
+      if (titleN.indexOf(tk) !== -1) score += 90;
+      if (kwN.indexOf(tk) !== -1) score += 40;
+    });
+
+    return score;
+  }
+
+  function getSearchMatches(rawQuery){
+    var normQ = normSearch(rawQuery);
+    var catalog = getSearchCatalog();
+    if (!normQ) {
+      return {
+        isEmptyQuery: true,
+        matches: catalog.filter(function(it){ return it.quick; }).slice(0, 6)
+      };
+    }
+    var tokens = normQ.split(' ').filter(Boolean);
+    var scored = [];
+    catalog.forEach(function(item){
+      var sc = scoreSearchItem(item, normQ, tokens);
+      if (sc > 0) scored.push({ item: item, score: sc });
+    });
+    scored.sort(function(a, b){
+      if (b.score !== a.score) return b.score - a.score;
+      return b.item.priority - a.item.priority;
+    });
+    return {
+      isEmptyQuery: false,
+      matches: scored.slice(0, 6).map(function(s){ return s.item; })
+    };
+  }
+
+  function selectSuggestion(item){
+    if (!item) return;
+    closeSearchPanel();
+    if (searchInput) searchInput.value = item.title;
+    if (typeof item.action === 'function') item.action();
+  }
+
+  function syncActiveSuggestion(){
+    if (!searchResultsBox) return;
+    var btns = searchResultsBox.querySelectorAll('.header-search-item');
+    btns.forEach(function(btn, idx){
+      var isAct = idx === activeSearchIndex;
+      btn.classList.toggle('is-active', isAct);
+      btn.setAttribute('aria-selected', String(isAct));
+    });
+  }
+
+  function renderSearchSuggestions(rawQuery){
+    if (!searchResultsBox) return;
+    var isEn = window.HC_LANG === 'en';
+    var res = getSearchMatches(rawQuery);
+    var list = res.matches;
+    var hasDirectMatches = !res.isEmptyQuery && list.length > 0;
+
+    searchResultsBox.textContent = '';
+    activeSearchIndex = -1;
+
+    if (!res.isEmptyQuery && !list.length) {
+      var emptyMsg = document.createElement('div');
+      emptyMsg.className = 'header-search-empty';
+      emptyMsg.textContent = isEn
+        ? 'No exact match for "' + hcSanitizeText(rawQuery, 40, false) + '". Try one of these sections:'
+        : 'Sin coincidencias exactas para "' + hcSanitizeText(rawQuery, 40, false) + '". Prueba con una sección:';
+      searchResultsBox.appendChild(emptyMsg);
+      list = getSearchCatalog().filter(function(it){ return it.quick; }).slice(0, 4);
+    }
+
+    currentSuggestions = list;
+
+    var head = document.createElement('div');
+    head.className = 'header-search-results-head';
+    head.textContent = res.isEmptyQuery
+      ? (isEn ? 'Suggested sections' : 'Sugerencias de búsqueda')
+      : (hasDirectMatches ? (isEn ? 'Results' : 'Resultados sugeridos') : (isEn ? 'Popular sections' : 'Secciones principales'));
+    searchResultsBox.appendChild(head);
+
+    list.forEach(function(item, idx){
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'header-search-item';
+      btn.setAttribute('role', 'option');
+      btn.setAttribute('aria-selected', 'false');
+
+      var copy = document.createElement('span');
+      copy.className = 'header-search-item-copy';
+
+      var titleEl = document.createElement('span');
+      titleEl.className = 'header-search-item-title';
+      titleEl.textContent = item.title;
+
+      var subEl = document.createElement('span');
+      subEl.className = 'header-search-item-sub';
+      subEl.textContent = item.subtitle;
+
+      copy.appendChild(titleEl);
+      copy.appendChild(subEl);
+
+      var tagEl = document.createElement('span');
+      tagEl.className = 'header-search-item-tag';
+      tagEl.textContent = item.tag;
+
+      btn.appendChild(copy);
+      btn.appendChild(tagEl);
+
+      btn.addEventListener('mouseenter', function(){
+        activeSearchIndex = idx;
+        syncActiveSuggestion();
+      });
+      btn.addEventListener('click', function(e){
+        e.preventDefault();
+        e.stopPropagation();
+        selectSuggestion(item);
+      });
+
+      searchResultsBox.appendChild(btn);
+    });
+
+    searchResultsBox.classList.add('is-visible');
+  }
+
   if (searchToggle && searchWrap) {
     searchToggle.addEventListener('click', function(e) {
       e.stopPropagation();
@@ -2547,32 +3148,63 @@ function hcT(key){
       searchToggle.setAttribute('aria-expanded', String(isOpen));
       if (isOpen) {
         if (mobileMenuOpen) setMobileMenuState(false, false);
-        var inp = searchWrap.querySelector('input');
-        if (inp) inp.focus();
+        renderSearchSuggestions(searchInput ? searchInput.value : '');
+        if (searchInput) searchInput.focus();
+      } else {
+        closeSearchPanel();
       }
     });
     searchWrap.addEventListener('click', function(e) {
       e.stopPropagation();
     });
     document.addEventListener('click', function() {
-      searchWrap.classList.remove('is-open');
-      searchToggle.setAttribute('aria-expanded', 'false');
+      closeSearchPanel();
     });
     document.addEventListener('keydown', function(e) {
-      if (e.key === 'Escape') {
-        searchWrap.classList.remove('is-open');
-        searchToggle.setAttribute('aria-expanded', 'false');
+      if (e.key === 'Escape' && searchWrap.classList.contains('is-open')) {
+        closeSearchPanel();
       }
     });
   }
 
-  /* ---------- BUSCADOR (decorativo) ---------- */
-  var shopSearch = document.getElementById('shopSearch');
+  if (searchInput) {
+    searchInput.addEventListener('focus', function(){
+      if (searchWrap && searchWrap.classList.contains('is-open')) {
+        renderSearchSuggestions(searchInput.value);
+      }
+    });
+    searchInput.addEventListener('input', function(){
+      renderSearchSuggestions(searchInput.value);
+    });
+    searchInput.addEventListener('keydown', function(e){
+      if (!currentSuggestions.length) return;
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        activeSearchIndex = (activeSearchIndex + 1) % currentSuggestions.length;
+        syncActiveSuggestion();
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        activeSearchIndex = activeSearchIndex <= 0 ? currentSuggestions.length - 1 : activeSearchIndex - 1;
+        syncActiveSuggestion();
+      }
+    });
+  }
+
   if (shopSearch){
     shopSearch.addEventListener('submit', function(e){
       e.preventDefault();
-      var c = document.getElementById('contacto');
-      if (c) c.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth' });
+      var q = searchInput ? searchInput.value : '';
+      if (activeSearchIndex >= 0 && currentSuggestions[activeSearchIndex]) {
+        selectSuggestion(currentSuggestions[activeSearchIndex]);
+        return;
+      }
+      var res = getSearchMatches(q);
+      if (!res.isEmptyQuery && res.matches.length) {
+        selectSuggestion(res.matches[0]);
+      } else {
+        renderSearchSuggestions(q);
+        if (searchInput) searchInput.focus();
+      }
     });
   }
 
@@ -2724,7 +3356,27 @@ function hcT(key){
   var rvCarousel = document.getElementById('reviewsCarousel');
   var rvDotsWrap = document.getElementById('reviewDots');
   var rvIndex = 0;
+  var rvAutoTimer = null;
+  var RV_AUTO_DELAY = 5500;
   function rvSlides(){ return reviewList ? reviewList.querySelectorAll('.review-card') : []; }
+  function stopRvAuto(){
+    if (rvAutoTimer) { clearInterval(rvAutoTimer); rvAutoTimer = null; }
+  }
+  function startRvAuto(){
+    stopRvAuto();
+    if (!rvCarousel) return;
+    rvAutoTimer = setInterval(function(){
+      if (!rvCarousel || rvCarousel.classList.contains('is-hidden')) return;
+      var modalEl = document.getElementById('reviewModalOverlay');
+      if (modalEl && modalEl.classList.contains('open')) return;
+      if (rvSlides().length > 1) rvGo(rvIndex + 1);
+    }, RV_AUTO_DELAY);
+  }
+  var rvIdle = hcCreateCarouselIdleController({
+    idleMs: 10000,
+    onPause: stopRvAuto,
+    onResume: startRvAuto
+  });
   function rvBuildDots(){
     if (!rvDotsWrap) return;
     rvDotsWrap.innerHTML = '';
@@ -2732,7 +3384,7 @@ function hcT(key){
       var b = document.createElement('button');
       b.type = 'button'; b.className = 'car-dot';
       b.setAttribute('aria-label', hcT('review_view_aria_prefix') + ' ' + (k+1));
-      b.addEventListener('click', function(){ rvGo(k); });
+      b.addEventListener('click', function(){ rvIdle.trigger(false); rvGo(k); });
       rvDotsWrap.appendChild(b);
     });
   }
@@ -2747,14 +3399,30 @@ function hcT(key){
   if (rvCarousel){
     var rvPrev = rvCarousel.querySelector('[data-rv-prev]');
     var rvNext = rvCarousel.querySelector('[data-rv-next]');
-    if (rvPrev) rvPrev.addEventListener('click', function(){ rvGo(rvIndex-1); });
-    if (rvNext) rvNext.addEventListener('click', function(){ rvGo(rvIndex+1); });
+    var lastRvMove = 0;
+    if (rvPrev) rvPrev.addEventListener('click', function(){ rvIdle.trigger(false); rvGo(rvIndex-1); });
+    if (rvNext) rvNext.addEventListener('click', function(){ rvIdle.trigger(false); rvGo(rvIndex+1); });
+    rvCarousel.addEventListener('pointerdown', function(){ rvIdle.trigger(false); }, { passive: true });
+    rvCarousel.addEventListener('mouseenter', function(){ rvIdle.trigger(true); });
+    rvCarousel.addEventListener('mousemove', function(){
+      var now = Date.now();
+      if (now - lastRvMove > 400) {
+        lastRvMove = now;
+        rvIdle.trigger(true);
+      }
+    }, { passive: true });
+    rvCarousel.addEventListener('mouseleave', function(){ rvIdle.notifyLeave(); });
+    rvCarousel.addEventListener('keydown', function(e){
+      if (e.key === 'ArrowLeft') { rvIdle.trigger(false); rvGo(rvIndex-1); }
+      else if (e.key === 'ArrowRight') { rvIdle.trigger(false); rvGo(rvIndex+1); }
+    });
 
     var rvVp = rvCarousel.querySelector('.carousel-viewport');
     if (rvVp) {
       var rvx=0, rdx=0, rmoved=false;
-      rvVp.addEventListener('touchstart', function(e){ rvx=e.touches[0].clientX; rdx=0; rmoved=false; reviewList.style.transition='none'; }, {passive:true});
+      rvVp.addEventListener('touchstart', function(e){ rvIdle.trigger(false); rvx=e.touches[0].clientX; rdx=0; rmoved=false; reviewList.style.transition='none'; }, {passive:true});
       rvVp.addEventListener('touchmove', function(e){ 
+        rvIdle.trigger(false);
         rdx=e.touches[0].clientX - rvx; 
         if(Math.abs(rdx)>10) rmoved=true; 
         if(rmoved){
@@ -2769,11 +3437,12 @@ function hcT(key){
           else if(rdx>40) rvGo(rvIndex-1); 
           else rvGo(rvIndex);
         } 
+        rvIdle.trigger(false);
       });
-      rvVp.addEventListener('touchcancel', function(){ reviewList.style.transition=''; rvGo(rvIndex); });
+      rvVp.addEventListener('touchcancel', function(){ reviewList.style.transition=''; rvGo(rvIndex); rvIdle.trigger(false); });
     }
   }
-  rvBuildDots(); rvGo(0);
+  rvBuildDots(); rvGo(0); startRvAuto();
 
   /* ---------- BOTÓN FILTRO: mostrar/ocultar el carrusel de reseñas ---------- */
   var rvFilterToggle = document.getElementById('rvFilterToggle');
@@ -2782,6 +3451,7 @@ function hcT(key){
       var hidden = rvCarousel.classList.toggle('is-hidden');
       rvFilterToggle.setAttribute('aria-pressed', String(hidden));
       rvFilterToggle.classList.toggle('active', hidden);
+      if (hidden) stopRvAuto(); else startRvAuto();
     });
   }
 
@@ -2813,6 +3483,39 @@ function hcT(key){
   var rvLightboxCaption = document.getElementById('rvLightboxCaption');
   var rvLightboxClose = document.getElementById('rvLightboxClose');
   var rvMediaIndex = 0;
+  var rvMediaAutoTimer = null;
+  var RV_MEDIA_IMAGE_DELAY = 6000;
+
+  function clearRvMediaAutoTimer_(){
+    if (rvMediaAutoTimer) {
+      clearTimeout(rvMediaAutoTimer);
+      rvMediaAutoTimer = null;
+    }
+  }
+
+  var rvMediaIdle = hcCreateCarouselIdleController({
+    idleMs: 10000,
+    onPause: clearRvMediaAutoTimer_,
+    onResume: function(){
+      if (!rvMediaTrack) return;
+      var slides = rvMediaTrack.querySelectorAll('.rv-media-slide');
+      if (!slides.length) return;
+      var activeSlide = slides[rvMediaIndex];
+      if (!activeSlide) return;
+      var activeVideo = activeSlide.querySelector('video.rv-media-video');
+      var activeIframe = activeSlide.querySelector('iframe.rv-media-iframe');
+      if (activeVideo) {
+        if (activeVideo.ended && slides.length > 1) {
+          goTestimonialMedia(rvMediaIndex + 1, { autoPlay: true });
+        } else if (activeVideo.paused && isTestimonialCardVisible_(120)) {
+          delete activeVideo.dataset.userPaused;
+          playTestimonialVideo_(activeVideo, slides.length);
+        }
+      } else if (!activeIframe && slides.length > 1) {
+        goTestimonialMedia(rvMediaIndex + 1, { autoPlay: true });
+      }
+    }
+  });
 
   function extractGoogleDriveId_(url){
     if (!url || typeof url !== 'string') return '';
@@ -3025,6 +3728,7 @@ function hcT(key){
 
   function activateActiveTestimonialSlide_(){
     if (!rvMediaTrack) return;
+    clearRvMediaAutoTimer_();
     var slides = rvMediaTrack.querySelectorAll('.rv-media-slide');
     var activeSlide = slides[rvMediaIndex];
     if (!activeSlide) return;
@@ -3040,6 +3744,15 @@ function hcT(key){
     if (activeVideo) {
       startActiveDriveFallbackTimer_(activeSlide, activeVideo, rvMediaIndex);
       playTestimonialVideo_(activeVideo, slides.length);
+      return;
+    }
+    // Diapositiva de imagen: avanzar automáticamente si no está controlada manualmente
+    if (slides.length > 1 && !rvMediaIdle.isManual()) {
+      rvMediaAutoTimer = setTimeout(function(){
+        if (!rvMediaIdle.isManual() && (!rvLightbox || rvLightbox.hidden)) {
+          goTestimonialMedia(rvMediaIndex + 1, { autoPlay: true });
+        }
+      }, RV_MEDIA_IMAGE_DELAY);
     }
   }
 
@@ -3120,7 +3833,7 @@ function hcT(key){
     });
 
     videoEl.addEventListener('ended', function(){
-      if (slideIdx === rvMediaIndex && (totalCount || 1) > 1) {
+      if (slideIdx === rvMediaIndex && (totalCount || 1) > 1 && !rvMediaIdle.isManual()) {
         goTestimonialMedia(rvMediaIndex + 1, { autoPlay: true });
       }
     });
@@ -3142,7 +3855,12 @@ function hcT(key){
     videoEl.addEventListener('pause', function(){
       if (!videoEl.dataset.systemPause && !videoEl.ended && !document.hidden && videoEl.currentTime > 0.15) {
         videoEl.dataset.userPaused = '1';
+        rvMediaIdle.trigger(false);
       }
+    });
+
+    videoEl.addEventListener('seeking', function(){
+      if (slideIdx === rvMediaIndex) rvMediaIdle.trigger(false);
     });
 
     videoEl.addEventListener('volumechange', function(){
@@ -3292,6 +4010,7 @@ function hcT(key){
       var zoomBtn = slideEl.querySelector('[data-media-zoom]');
       if (zoomBtn) {
         zoomBtn.addEventListener('click', function(){
+          rvMediaIdle.trigger(false);
           var zIdx = parseInt(zoomBtn.getAttribute('data-media-zoom'), 10);
           var target = items[zIdx];
           if (target) openMediaLightbox_(target.src, target.title);
@@ -3300,6 +4019,7 @@ function hcT(key){
       var mediaImg = slideEl.querySelector('.rv-media-img');
       if (mediaImg) {
         mediaImg.addEventListener('click', function(){
+          rvMediaIdle.trigger(false);
           var target = items[idx];
           if (target) openMediaLightbox_(target.src, target.title);
         });
@@ -3320,7 +4040,7 @@ function hcT(key){
           b.type = 'button';
           b.className = 'car-dot';
           b.setAttribute('aria-label', hcT('reviews_media_dot_prefix') + ' ' + (k + 1));
-          b.addEventListener('click', function(){ goTestimonialMedia(k, { autoPlay: true }); });
+          b.addEventListener('click', function(){ rvMediaIdle.trigger(false); goTestimonialMedia(k, { autoPlay: true }); });
           rvMediaDots.appendChild(b);
         });
       }
@@ -3335,8 +4055,8 @@ function hcT(key){
     }
   }
 
-  if (rvMediaPrev) rvMediaPrev.addEventListener('click', function(){ goTestimonialMedia(rvMediaIndex - 1, { autoPlay: true }); });
-  if (rvMediaNext) rvMediaNext.addEventListener('click', function(){ goTestimonialMedia(rvMediaIndex + 1, { autoPlay: true }); });
+  if (rvMediaPrev) rvMediaPrev.addEventListener('click', function(){ rvMediaIdle.trigger(false); goTestimonialMedia(rvMediaIndex - 1, { autoPlay: true }); });
+  if (rvMediaNext) rvMediaNext.addEventListener('click', function(){ rvMediaIdle.trigger(false); goTestimonialMedia(rvMediaIndex + 1, { autoPlay: true }); });
 
   document.addEventListener('visibilitychange', function(){
     if (!document.hidden && isTestimonialCardVisible_(120)) {
@@ -3374,14 +4094,32 @@ function hcT(key){
   }
 
   if (rvMediaCarousel) {
+    var lastMediaMove = 0;
+    rvMediaCarousel.addEventListener('pointerdown', function(){ rvMediaIdle.trigger(false); }, { passive: true });
+    rvMediaCarousel.addEventListener('mouseenter', function(){ rvMediaIdle.trigger(true); });
+    rvMediaCarousel.addEventListener('mousemove', function(){
+      var now = Date.now();
+      if (now - lastMediaMove > 400) {
+        lastMediaMove = now;
+        rvMediaIdle.trigger(true);
+      }
+    }, { passive: true });
+    rvMediaCarousel.addEventListener('mouseleave', function(){ rvMediaIdle.notifyLeave(); });
+    rvMediaCarousel.addEventListener('keydown', function(e){
+      if (e.key === 'ArrowLeft') { rvMediaIdle.trigger(false); goTestimonialMedia(rvMediaIndex - 1, { autoPlay: true }); }
+      else if (e.key === 'ArrowRight') { rvMediaIdle.trigger(false); goTestimonialMedia(rvMediaIndex + 1, { autoPlay: true }); }
+    });
+
     var mediaVp = rvMediaCarousel.querySelector('.rv-media-viewport');
     if (mediaVp) {
       var mx = 0, mdx = 0, mmoved = false;
       mediaVp.addEventListener('touchstart', function(e){
+        rvMediaIdle.trigger(false);
         mx = e.touches[0].clientX; mdx = 0; mmoved = false;
         if (rvMediaTrack) rvMediaTrack.style.transition = 'none';
       }, { passive: true });
       mediaVp.addEventListener('touchmove', function(e){
+        rvMediaIdle.trigger(false);
         mdx = e.touches[0].clientX - mx;
         if (Math.abs(mdx) > 10) mmoved = true;
       }, { passive: true });
@@ -3391,9 +4129,34 @@ function hcT(key){
           if (mdx < -40) goTestimonialMedia(rvMediaIndex + 1, { autoPlay: true });
           else if (mdx > 40) goTestimonialMedia(rvMediaIndex - 1, { autoPlay: true });
         }
+        rvMediaIdle.trigger(false);
       });
     }
   }
+
+  /* ---------- MARQUEE DE ALIADOS: pausa manual y reanudación automática a los 10s ---------- */
+  document.querySelectorAll('.aliados-marquee-wrap').forEach(function(aliadosWrap){
+    var lastAliadosMove = 0;
+    var aliadosIdle = hcCreateCarouselIdleController({
+      idleMs: 10000,
+      onPause: function(){ aliadosWrap.classList.add('is-manual-paused'); },
+      onResume: function(){ aliadosWrap.classList.remove('is-manual-paused'); }
+    });
+    aliadosWrap.addEventListener('pointerdown', function(){ aliadosIdle.trigger(false); }, { passive: true });
+    aliadosWrap.addEventListener('touchstart', function(){ aliadosIdle.trigger(false); }, { passive: true });
+    aliadosWrap.addEventListener('touchmove', function(){ aliadosIdle.trigger(false); }, { passive: true });
+    aliadosWrap.addEventListener('touchend', function(){ aliadosIdle.trigger(false); }, { passive: true });
+    aliadosWrap.addEventListener('click', function(){ aliadosIdle.trigger(false); });
+    aliadosWrap.addEventListener('mouseenter', function(){ aliadosIdle.trigger(true); });
+    aliadosWrap.addEventListener('mousemove', function(){
+      var now = Date.now();
+      if (now - lastAliadosMove > 400) {
+        lastAliadosMove = now;
+        aliadosIdle.trigger(true);
+      }
+    }, { passive: true });
+    aliadosWrap.addEventListener('mouseleave', function(){ aliadosIdle.notifyLeave(); });
+  });
 
   window.hcSetSheetTestimonialMedia = function(list){
     sheetTestimonialMedia = Array.isArray(list) ? list : [];

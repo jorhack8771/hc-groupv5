@@ -327,6 +327,108 @@ html.mobile-menu-open .site-header{ z-index:10020; transition:transform .25s eas
 .header-search-form button{ width:34px; height:34px; border-radius:50%; border:0; background:var(--hc-blue); color:#ffffff; display:grid; place-items:center; cursor:pointer; flex:0 0 auto; transition:background .18s ease; }
 .header-search-form button:hover{ background:var(--hc-blue-deep); }
 .header-search-form button svg{ width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:2; }
+.header-search-results{
+  position:absolute;
+  top:calc(100% + 68px);
+  right:0;
+  width:340px;
+  max-width:calc(100vw - 24px);
+  max-height:min(360px, 60vh);
+  overflow-y:auto;
+  background:#ffffff;
+  border-radius:18px;
+  box-shadow:0 16px 42px rgba(10,37,64,.16), 0 2px 8px rgba(10,37,64,.06);
+  border:1.5px solid var(--line);
+  padding:8px;
+  opacity:0;
+  pointer-events:none;
+  transform:translateY(6px) scale(.98);
+  transition:opacity .18s ease, transform .18s ease, visibility .18s ease;
+  visibility:hidden;
+  z-index:160;
+  overscroll-behavior:contain;
+}
+.header-search-wrap.is-open .header-search-results.is-visible{
+  opacity:1;
+  pointer-events:auto;
+  transform:translateY(0) scale(1);
+  visibility:visible;
+}
+.header-search-results-head{
+  font-family:var(--display);
+  font-size:.68rem;
+  font-weight:700;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  color:#64748b;
+  padding:6px 10px 4px;
+}
+.header-search-item{
+  width:100%;
+  border:0;
+  background:transparent;
+  text-align:left;
+  padding:9px 11px;
+  border-radius:12px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  cursor:pointer;
+  transition:background .15s ease, color .15s ease;
+  font-family:var(--body);
+  color:var(--ink);
+}
+.header-search-item:hover,
+.header-search-item.is-active{
+  background:rgba(14,112,182,.09);
+}
+.header-search-item-copy{
+  min-width:0;
+  display:flex;
+  flex-direction:column;
+  gap:2px;
+}
+.header-search-item-title{
+  font-family:var(--display);
+  font-weight:700;
+  font-size:.88rem;
+  color:var(--ink);
+  line-height:1.25;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.header-search-item:hover .header-search-item-title,
+.header-search-item.is-active .header-search-item-title{
+  color:var(--hc-blue);
+}
+.header-search-item-sub{
+  font-size:.77rem;
+  color:#64748b;
+  line-height:1.3;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.header-search-item-tag{
+  flex:0 0 auto;
+  font-family:var(--display);
+  font-size:.66rem;
+  font-weight:700;
+  letter-spacing:.03em;
+  color:var(--hc-blue);
+  background:rgba(14,112,182,.08);
+  padding:3px 8px;
+  border-radius:999px;
+  white-space:nowrap;
+}
+.header-search-empty{
+  padding:8px 10px 6px;
+  font-size:.82rem;
+  color:#475569;
+  line-height:1.4;
+}
 
 /* El drawer móvil (#mobileMenuSlot / #mobileMenuDrawer), backdrop y trigger están ocultos en desktop */
 @media (min-width:981px){
@@ -1435,7 +1537,7 @@ body.mobile-menu-open{
 /* CARRUSEL DE EQUIPO */
 .team-carousel{ position:relative; max-width:980px; margin-inline:auto; padding:0 8px; }
 .team-viewport{ overflow:hidden; padding:10px 2px 4px; }
-.team-track{ display:flex; gap:24px; transition:transform .55s cubic-bezier(.22,.8,.26,1); }
+.team-track{ display:flex; align-items:stretch; gap:24px; transition:transform .55s cubic-bezier(.22,.8,.26,1); }
 .team-track .team-card{ flex:0 0 calc((100% - 48px)/3); }
 .team-carousel .car-prev{ left:-8px; } .team-carousel .car-next{ right:-8px; }
 .team-dots{ display: none !important; margin-top:16px; }
@@ -1450,12 +1552,14 @@ body.mobile-menu-open{
 /* Respaldo si un logo de aliado no carga */
 .logo-fallback{ display:flex; align-items:center; justify-content:center; min-width:120px; height:40px; padding:0 16px; border:1px solid var(--line); border-radius:8px; background:var(--mist); color:var(--gray-2); font-family:var(--display); font-weight:700; font-size:.72rem; letter-spacing:.08em; text-transform:uppercase; }
 /* Tarjeta de equipo: sobria, sin sobrecargar */
-.team-card{ background:#fff; border:1px solid var(--line); border-radius:16px; overflow:hidden; box-shadow:var(--shadow-sm); transition:transform .2s ease, box-shadow .2s ease; }
+.team-card{ display:flex; flex-direction:column; background:#fff; border:1px solid var(--line); border-radius:16px; overflow:hidden; box-shadow:var(--shadow-sm); transition:transform .2s ease, box-shadow .2s ease; }
 .team-card:hover{ transform:translateY(-6px); box-shadow:0 14px 30px rgba(86,113,22,.16); }
-.team-card .photo{ width:100%; aspect-ratio:1080/842; background:var(--mist); }
+.team-card .card-img,
+.team-card .photo{ width:100%; aspect-ratio:1 / 1; background:#fff; overflow:hidden; flex-shrink:0; }
+.team-card .card-img img,
 .team-card .photo img{ width:100%; height:100%; object-fit:cover; object-position:center top; display:block; }
 .team-photo-fallback{ width:100%; height:100%; display:grid; place-items:center; background:linear-gradient(135deg,var(--hc-blue),var(--hc-blue-deep)); color:#fff; font-family:var(--display); font-weight:800; font-size:2.4rem; }
-.team-card .meta{ padding:16px 14px 18px; text-align:center; }
+.team-card .meta{ flex:1; display:flex; flex-direction:column; justify-content:center; padding:16px 14px 18px; text-align:center; }
 .team-card .meta strong{ display:block; font-family:var(--display); font-weight:700; color:var(--ink); font-size:1rem; line-height:1.2; }
 .team-card .meta span{ display:block; color:var(--gray); font-size:.85rem; margin-top:4px; }
 .unit-logo{ height:62px; display:flex; align-items:center; margin-bottom:22px; }
@@ -1929,6 +2033,8 @@ body.mobile-menu-open{
   .lang-switch{ gap:2px; margin-right:2px; }
   .lang-btn{ font-size:.76rem; padding:4px; }
   .header-search-wrap{ position:static; }
+  .header-search-form{ width:min(320px, 100%); right:0; }
+  .header-search-results{ width:min(340px, 100%); right:0; top:calc(100% + 66px); }
   .header-icon-btn.search-toggle,
   .mobile-menu-btn{ width:42px; height:42px; min-width:42px; min-height:42px; }
   .hero-carousel-frame{ border-radius:0; aspect-ratio:auto; min-height:270px; max-height:310px; }
@@ -3475,9 +3581,20 @@ chat-widget-button[is-open] .icon-wrapper svg {
 }
 
 /* ============ MODAL: CATÁLOGO VETCARE (pantalla completa de extremo a extremo) ============ */
+#hero,
+#nosotros,
+#empresas,
+#aliados,
+#resenas,
+#equipo,
+#faq,
 #contacto,
 #leadForm{
   scroll-margin-top: 108px;
+}
+.is-search-hit{
+  box-shadow: 0 0 0 3px rgba(14,112,182,.35), 0 12px 28px rgba(10,37,64,.14) !important;
+  transition: box-shadow .3s ease;
 }
 
 .vc-contact-notice{
@@ -4046,7 +4163,8 @@ chat-widget-button[is-open] .icon-wrapper svg {
 .aliados-marquee--right .aliados-track{
   animation: aliadosScrollRight 48s linear infinite;
 }
-.aliados-marquee:hover .aliados-track{
+.aliados-marquee:hover .aliados-track,
+.aliados-marquee-wrap.is-manual-paused .aliados-track{
   animation-play-state: paused;
 }
 

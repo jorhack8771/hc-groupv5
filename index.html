@@ -4,8 +4,8 @@
 <script src="./runtime-compat.js"></script>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; img-src 'self' data: blob: https:; media-src 'self' blob: https:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com https://cdn.builderbot.cloud https://*.builderbot.cloud; font-src 'self' data: https://fonts.gstatic.com; script-src 'self' https://cdnjs.cloudflare.com https://cdn.builderbot.cloud; connect-src 'self' https://script.google.com https://script.googleusercontent.com https://egwabbnmscqfqbvjxqqr.supabase.co https://*.tile.openstreetmap.org https://cdn.builderbot.cloud https://*.builderbot.cloud wss://*.builderbot.cloud; frame-src 'self' https://www.google.com https://maps.google.com https://drive.google.com https://docs.google.com https://www.youtube.com https://www.youtube-nocookie.com https://player.vimeo.com https://egwabbnmscqfqbvjxqqr.supabase.co https://cdn.builderbot.cloud https://*.builderbot.cloud; form-action 'self' https://script.google.com mailto: tel:;" />
-<meta name="referrer" content="no-referrer" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; img-src 'self' data: blob: https:; media-src 'self' blob: https://egwabbnmscqfqbvjxqqr.supabase.co https://drive.google.com https://drive.usercontent.google.com https://*.googleusercontent.com https://*.googlevideo.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com https://cdn.builderbot.cloud https://*.builderbot.cloud; font-src 'self' data: https://fonts.gstatic.com; script-src 'self' https://cdnjs.cloudflare.com https://cdn.builderbot.cloud; connect-src 'self' https://script.google.com https://script.googleusercontent.com https://egwabbnmscqfqbvjxqqr.supabase.co https://*.tile.openstreetmap.org https://cdn.builderbot.cloud https://*.builderbot.cloud wss://*.builderbot.cloud; frame-src 'self' https://www.google.com https://maps.google.com https://drive.google.com https://docs.google.com https://egwabbnmscqfqbvjxqqr.supabase.co https://cdn.builderbot.cloud https://*.builderbot.cloud; form-action 'self' https://script.google.com mailto: tel:;" />
+<meta name="referrer" content="strict-origin-when-cross-origin" />
 <meta http-equiv="X-Content-Type-Options" content="nosniff" />
 <title>HC Group Latam</title>
 <!-- Favicon: el monograma "HC" recortado del logo de la marca -->
@@ -23,6 +23,8 @@
 <meta name="twitter:image" content="https://latamhcgroup.ai.studio/og-image.png?v=5" />
 <link rel="dns-prefetch" href="https://egwabbnmscqfqbvjxqqr.supabase.co" />
 <link rel="preconnect" href="https://egwabbnmscqfqbvjxqqr.supabase.co" />
+<link rel="dns-prefetch" href="https://drive.google.com" />
+<link rel="dns-prefetch" href="https://drive.usercontent.google.com" />
 <link rel="preconnect" href="https://drive.usercontent.google.com" crossorigin />
 <link rel="preconnect" href="https://cdn.builderbot.cloud" crossorigin />
 <link rel="preload" as="image" href="./imagenes/avatar.webp" />
@@ -585,10 +587,12 @@
             <div class="rv-media-viewport">
               <div class="rv-media-track" id="rvMediaTrack"></div>
             </div>
-            <button type="button" class="car-btn car-prev rv-media-prev" id="rvMediaPrev" aria-label="Testimonio anterior" data-i18n-aria="reviews_media_prev_aria" hidden>&#10094;</button>
-            <button type="button" class="car-btn car-next rv-media-next" id="rvMediaNext" aria-label="Siguiente testimonio" data-i18n-aria="reviews_media_next_aria" hidden>&#10095;</button>
           </div>
-          <div class="carousel-dots rv-media-dots" id="rvMediaDots" role="tablist" aria-label="Seleccionar video o imagen" hidden></div>
+          <div class="rv-media-controls" id="rvMediaControls" hidden>
+            <button type="button" class="rv-media-nav-btn rv-media-prev" id="rvMediaPrev" aria-label="Testimonio anterior" data-i18n-aria="reviews_media_prev_aria" hidden>&#10094;</button>
+            <div class="carousel-dots rv-media-dots" id="rvMediaDots" role="tablist" aria-label="Seleccionar video o imagen" hidden></div>
+            <button type="button" class="rv-media-nav-btn rv-media-next" id="rvMediaNext" aria-label="Siguiente testimonio" data-i18n-aria="reviews_media_next_aria" hidden>&#10095;</button>
+          </div>
         </aside>
       </div>
     </div>

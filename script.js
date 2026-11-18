@@ -2842,8 +2842,9 @@ function hcT(key){
     var previewUrl = '';
     var isDrive = false;
     if (type === 'video' && driveId) {
-      safeSrc = 'https://drive.usercontent.google.com/download?id=' + encodeURIComponent(driveId) + '&export=download&confirm=t';
-      previewUrl = 'https://drive.google.com/file/d/' + encodeURIComponent(driveId) + '/preview?autoplay=1&mute=1&vq=hd1080&hd=1';
+      safeSrc = 'https://drive.google.com/file/d/' + encodeURIComponent(driveId) + '/preview?autoplay=1&mute=1&vq=hd1080&hd=1';
+      previewUrl = safeSrc;
+      isDrive = true;
     }
     var safePoster = hcSanitizeImageSrc(item.poster || '', false);
     if (type === 'video' && !safePoster && driveId) {
@@ -3174,11 +3175,43 @@ function hcT(key){
     }
   }
 
+  var lastMediaSig_ = '';
+  function buildSlideMarkup_(item, idx, startIdx){
+    var badgeLabel = item.type === 'video' ? hcT('reviews_media_type_video') : hcT('reviews_media_type_image');
+    var resolvedVideoSrc = item.type === 'video' ? resolveTestimonialVideoSrc_(item.src) : item.src;
+    var previewAttr = item.previewUrl ? ' data-drive-preview="' + esc(item.previewUrl) + '"' : '';
+    var titleAttr = item.title ? ' data-media-title="' + esc(item.title) + '"' : '';
+    var muteBtnHtml = '<button type="button" class="rv-media-mute-btn" title="Activar sonido" aria-label="Activar sonido" aria-pressed="false">' +
+      '<svg viewBox="0 0 24 24"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="22" y1="9" x2="16" y2="15"/><line x1="16" y1="9" x2="22" y2="15"/></svg>' +
+    '</button>';
+    var isInitialActive = idx === startIdx;
+    var mediaEl = item.type === 'video'
+      ? (item.isDrive
+          ? '<iframe class="rv-media-iframe" src="' + (isInitialActive ? esc(item.src) : 'about:blank') + '" data-src="' + esc(item.src) + '" title="' + esc(item.title || badgeLabel) + '" allow="autoplay; fullscreen; encrypted-media; picture-in-picture" allowfullscreen loading="' + (isInitialActive ? 'eager' : 'lazy') + '" referrerpolicy="strict-origin-when-cross-origin"></iframe>'
+          : '<video class="rv-media-video" data-video-src="' + esc(resolvedVideoSrc) + '" muted playsinline webkit-playsinline preload="none"' + previewAttr + titleAttr + (item.poster ? ' poster="' + esc(item.poster) + '"' : '') + '></video>' + muteBtnHtml)
+      : '<img class="rv-media-img" src="' + esc(item.src) + '" alt="' + esc(item.title || badgeLabel) + '" loading="lazy" decoding="async" />' +
+        '<button type="button" class="rv-media-zoom" data-media-zoom="' + idx + '" aria-label="' + esc(hcT('reviews_media_zoom_aria')) + '">' +
+          '<svg viewBox="0 0 24 24"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>' +
+        '</button>';
+    var captionBlock = item.title
+      ? '<div class="rv-media-caption"><strong>' + esc(item.title) + '</strong></div>'
+      : '';
+    var frameClass = item.type === 'video' && item.isDrive ? 'rv-media-frame rv-media-frame--drive' : 'rv-media-frame';
+    return '<div class="rv-media-slide">' +
+      '<div class="' + frameClass + '">' +
+        mediaEl +
+      '</div>' +
+      captionBlock +
+    '</div>';
+  }
+
   function renderTestimonialMedia(){
     if (!rvMediaTrack) return;
-    pauseAllTestimonialVideos_(-1);
     var items = getActiveMediaItems_();
+    var nextSig = items.map(function(x){ return x.type + '|' + x.src + '|' + (x.title || ''); }).join(';;');
     if (!items.length) {
+      lastMediaSig_ = '';
+      pauseAllTestimonialVideos_(-1);
       if (rvMediaCounter) rvMediaCounter.hidden = true;
       if (rvMediaControls) rvMediaControls.hidden = true;
       if (rvMediaPrev) rvMediaPrev.hidden = true;
@@ -3205,35 +3238,30 @@ function hcT(key){
       return;
     }
 
-    rvMediaTrack.innerHTML = items.map(function(item, idx){
-      var badgeLabel = item.type === 'video' ? hcT('reviews_media_type_video') : hcT('reviews_media_type_image');
-      var resolvedVideoSrc = item.type === 'video' ? resolveTestimonialVideoSrc_(item.src) : item.src;
-      var previewAttr = item.previewUrl ? ' data-drive-preview="' + esc(item.previewUrl) + '"' : '';
-      var titleAttr = item.title ? ' data-media-title="' + esc(item.title) + '"' : '';
-      var muteBtnHtml = '<button type="button" class="rv-media-mute-btn" title="Activar sonido" aria-label="Activar sonido" aria-pressed="false">' +
-        '<svg viewBox="0 0 24 24"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="22" y1="9" x2="16" y2="15"/><line x1="16" y1="9" x2="22" y2="15"/></svg>' +
-      '</button>';
-      var mediaEl = item.type === 'video'
-        ? (item.isDrive
-            ? '<iframe class="rv-media-iframe" src="about:blank" data-src="' + esc(item.src) + '" title="' + esc(item.title || badgeLabel) + '" allow="autoplay; fullscreen; encrypted-media; picture-in-picture" allowfullscreen loading="lazy" referrerpolicy="strict-origin-when-cross-origin"></iframe>'
-            : '<video class="rv-media-video" data-video-src="' + esc(resolvedVideoSrc) + '" muted playsinline webkit-playsinline preload="none"' + previewAttr + titleAttr + (item.poster ? ' poster="' + esc(item.poster) + '"' : '') + '></video>' + muteBtnHtml)
-        : '<img class="rv-media-img" src="' + esc(item.src) + '" alt="' + esc(item.title || badgeLabel) + '" loading="lazy" decoding="async" />' +
-          '<button type="button" class="rv-media-zoom" data-media-zoom="' + idx + '" aria-label="' + esc(hcT('reviews_media_zoom_aria')) + '">' +
-            '<svg viewBox="0 0 24 24"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>' +
-          '</button>';
-      var captionBlock = item.title
-        ? '<div class="rv-media-caption"><strong>' + esc(item.title) + '</strong></div>'
-        : '';
-      var frameClass = item.type === 'video' && item.isDrive ? 'rv-media-frame rv-media-frame--drive' : 'rv-media-frame';
-      return '<div class="rv-media-slide">' +
-        '<div class="' + frameClass + '">' +
-          mediaEl +
-        '</div>' +
-        captionBlock +
-      '</div>';
-    }).join('');
+    if (nextSig === lastMediaSig_ && rvMediaTrack.children.length === items.length) {
+      return;
+    }
+
+    var startIdx = (rvMediaIndex >= 0 && rvMediaIndex < items.length) ? rvMediaIndex : 0;
+    var existingSlides = rvMediaTrack.querySelectorAll('.rv-media-slide');
+    var canAppendOnly = lastMediaSig_ && nextSig.indexOf(lastMediaSig_ + ';;') === 0 && existingSlides.length > 0 && existingSlides.length < items.length;
+    lastMediaSig_ = nextSig;
+
+    if (canAppendOnly) {
+      var appendHtml = items.slice(existingSlides.length).map(function(item, offset){
+        return buildSlideMarkup_(item, existingSlides.length + offset, startIdx);
+      }).join('');
+      rvMediaTrack.insertAdjacentHTML('beforeend', appendHtml);
+    } else {
+      pauseAllTestimonialVideos_(-1);
+      rvMediaTrack.innerHTML = items.map(function(item, idx){
+        return buildSlideMarkup_(item, idx, startIdx);
+      }).join('');
+    }
 
     rvMediaTrack.querySelectorAll('.rv-media-slide').forEach(function(slideEl, idx){
+      if (slideEl.dataset.rvBound === '1') return;
+      slideEl.dataset.rvBound = '1';
       var vid = slideEl.querySelector('video.rv-media-video');
       if (vid) {
         bindTestimonialVideoAutoplay_(slideEl, vid, idx, items.length);
@@ -3261,20 +3289,21 @@ function hcT(key){
           });
         }
       }
-    });
-
-    rvMediaTrack.querySelectorAll('[data-media-zoom]').forEach(function(btn){
-      btn.addEventListener('click', function(){
-        var idx = parseInt(btn.getAttribute('data-media-zoom'), 10);
-        var target = items[idx];
-        if (target) openMediaLightbox_(target.src, target.title);
-      });
-    });
-    rvMediaTrack.querySelectorAll('.rv-media-img').forEach(function(img, idx){
-      img.addEventListener('click', function(){
-        var target = items[idx];
-        if (target) openMediaLightbox_(target.src, target.title);
-      });
+      var zoomBtn = slideEl.querySelector('[data-media-zoom]');
+      if (zoomBtn) {
+        zoomBtn.addEventListener('click', function(){
+          var zIdx = parseInt(zoomBtn.getAttribute('data-media-zoom'), 10);
+          var target = items[zIdx];
+          if (target) openMediaLightbox_(target.src, target.title);
+        });
+      }
+      var mediaImg = slideEl.querySelector('.rv-media-img');
+      if (mediaImg) {
+        mediaImg.addEventListener('click', function(){
+          var target = items[idx];
+          if (target) openMediaLightbox_(target.src, target.title);
+        });
+      }
     });
 
     var hasMulti = items.length > 1;
@@ -3296,8 +3325,14 @@ function hcT(key){
         });
       }
     }
-    var startIdx = (rvMediaIndex >= 0 && rvMediaIndex < items.length) ? rvMediaIndex : 0;
-    goTestimonialMedia(startIdx, { autoPlay: isTestimonialCardVisible_(120) });
+    if (canAppendOnly) {
+      if (rvMediaCounter) rvMediaCounter.textContent = (rvMediaIndex + 1) + ' / ' + items.length;
+      if (rvMediaDots) {
+        rvMediaDots.querySelectorAll('button').forEach(function(d, k){ d.classList.toggle('on', k === rvMediaIndex); });
+      }
+    } else {
+      goTestimonialMedia(startIdx, { autoPlay: true });
+    }
   }
 
   if (rvMediaPrev) rvMediaPrev.addEventListener('click', function(){ goTestimonialMedia(rvMediaIndex - 1, { autoPlay: true }); });

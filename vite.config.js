@@ -1,8 +1,27 @@
 import { defineConfig } from 'vite';
 import { resolve } from 'path';
+import { handleDriveVideoRequest } from './drive-proxy.js';
+
+function driveVideoMiddlewarePlugin() {
+  const attach = (middlewares) => {
+    middlewares.use('/api/drive-video', (req, res) => {
+      void handleDriveVideoRequest(req, res);
+    });
+  };
+  return {
+    name: 'hc-drive-video-proxy',
+    configureServer(server) {
+      attach(server.middlewares);
+    },
+    configurePreviewServer(server) {
+      attach(server.middlewares);
+    }
+  };
+}
 
 export default defineConfig({
   base: './',
+  plugins: [driveVideoMiddlewarePlugin()],
   server: {
     host: '0.0.0.0',
     port: 3000,

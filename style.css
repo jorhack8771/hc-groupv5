@@ -409,8 +409,11 @@ html.mobile-menu-open .site-header{ z-index:10020; transition:transform .25s eas
 .rv-media-track{ display:flex; width:100%; min-width:0; transition:transform .5s cubic-bezier(.22,.8,.26,1); }
 .rv-media-slide{ flex:0 0 100%; min-width:0; width:100%; display:flex; flex-direction:column; justify-content:flex-start; gap:14px; }
 .rv-media-frame{ position:relative; flex:0 0 auto; width:100%; aspect-ratio:16 / 9; min-height:190px; border-radius:14px; overflow:hidden; background:#091a36; border:1px solid rgba(255,255,255,.22); box-shadow:0 10px 24px rgba(4,20,38,.28); }
-.rv-media-video, .rv-media-img{ position:absolute; inset:0; width:100%; height:100%; display:block; object-fit:cover; }
+.rv-media-video, .rv-media-img{ position:absolute; inset:0; width:100%; height:100%; display:block; border:0; object-fit:cover; }
 .rv-media-video{ background:#091a36; }
+.rv-media-embed{ position:absolute; inset:0; width:100%; height:100%; border:0; display:block; background:#091a36; z-index:1; }
+.rv-media-embed:not([src]){ background:transparent; }
+.rv-media-embed-poster{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; z-index:0; }
 .rv-media-img{ cursor:zoom-in; transition:transform .3s ease; }
 .rv-media-frame:hover .rv-media-img{ transform:scale(1.02); }
 .rv-media-zoom{ position:absolute; top:10px; right:10px; z-index:2; width:34px; height:34px; border-radius:50%; border:1px solid rgba(255,255,255,.28); background:rgba(12,35,64,.76); color:#fff; display:grid; place-items:center; cursor:pointer; transition:background .18s ease, transform .18s ease; }
